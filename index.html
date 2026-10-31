@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Comedor Haurreskola Basurto</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2F5D50">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Comedor">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <style>
   :root{
     --bg:#F5F3EE;
@@ -62,6 +70,18 @@
   .header-actions{display:flex;align-items:center;gap:2px;position:relative;}
   .dropdown-panel{position:absolute;top:calc(100% + 8px);right:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 12px 32px rgba(0,0,0,0.22);padding:16px;width:min(320px,calc(100vw - 32px));max-height:70vh;overflow:auto;z-index:60;display:none;}
   .dropdown-panel.open{display:block;}
+  .badge{position:absolute;top:-4px;right:-4px;background:#C8452B;color:#fff;border-radius:10px;font-size:0.68rem;font-weight:700;min-width:17px;height:17px;line-height:17px;text-align:center;padding:0 4px;}
+  .icon-wrap{position:relative;display:inline-block;}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:0.9rem;box-shadow:0 8px 24px rgba(0,0,0,0.3);z-index:200;max-width:calc(100vw - 32px);}
+  .act-item{padding:8px 0;border-bottom:1px solid var(--line);font-size:0.86rem;}
+  .act-item.nuevo{font-weight:700;}
+  .act-item .when{display:block;color:var(--ink-soft);font-weight:400;font-size:0.76rem;}
+  table.mini{width:100%;border-collapse:collapse;font-size:0.86rem;}
+  table.mini th,table.mini td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left;}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+  .kpi{background:var(--verde-suave);border-radius:10px;padding:8px 10px;}
+  .kpi b{display:block;font-size:1.05rem;}
+  .kpi span{font-size:0.74rem;color:var(--ink-soft);}
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:200;padding:20px;}
   .modal-overlay.open{display:flex;}
   .modal-box{background:var(--panel);border-radius:var(--radius);padding:20px;max-width:340px;box-shadow:0 16px 48px rgba(0,0,0,0.35);}
@@ -87,6 +107,7 @@
   .cal-cell.empty{background:transparent;}
   .cal-cell.readonly{cursor:default;opacity:.9;}
   .cal-cell.disabled{cursor:default;opacity:.6;}
+  .cal-cell.out{background:repeating-linear-gradient(135deg,var(--gris-fest) 0 6px,transparent 6px 12px);color:var(--ink-soft);border-color:var(--gris-fest);}
   .cal-cell.late::after{content:'';position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--rojo);border:1px solid #fff;}
   .legend{display:flex;gap:14px;font-size:0.78rem;color:var(--ink-soft);margin-top:10px;flex-wrap:wrap;}
   .legend span{display:inline-flex;align-items:center;gap:5px;}
@@ -174,6 +195,33 @@
   // (no exist\u00eda en tu lista \u2014 ver mi explicaci\u00f3n al final del mensaje).
   const RPC_ADMIN_SET_PIN = 'admin_set_family_pin';
   const RPC_ADMIN_SET_ACTIVE = 'admin_set_family_active';
+  const RPC_FAMILY_SET_PIN = 'family_set_own_pin';
+
+  // ---- Instalaci\u00f3n como app (PWA) ----
+  var deferredInstall = null; var appReady = false;
+  var isStandalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  var isIOS = (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferredInstall = e; if (appReady) try{ render(); }catch(_){} });
+  window.addEventListener('appinstalled', function(){ deferredInstall = null; isStandalone = true; try{ render(); }catch(_){} });
+  if ('serviceWorker' in navigator && location.protocol === 'https:'){
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+  }
+  function installHtml(){
+    if (isStandalone) return '';
+    if (!deferredInstall && !isIOS) return '';
+    return '<div class="card" style="margin-top:12px;"><p style="margin:0 0 8px;font-weight:700;">\ud83d\udcf2 Instala la app en tu m\u00f3vil</p>' +
+      (deferredInstall ? '<button class="btn primary" id="install-app">Instalar</button>'
+        : '<p class="hint" style="margin:0;">En iPhone: toca <b>Compartir</b> (cuadrado con flecha) y luego <b>A\u00f1adir a pantalla de inicio</b>.</p>') + '</div>';
+  }
+  function bindInstall(){
+    var b = document.getElementById('install-app');
+    if (b) b.addEventListener('click', async function(){
+      if (!deferredInstall) return;
+      deferredInstall.prompt();
+      try{ await deferredInstall.userChoice; }catch(_){}
+      deferredInstall = null; render();
+    });
+  }
 
   const MENUS = ['Pur\u00e9 0','Pur\u00e9 1','Pur\u00e9 2','Pur\u00e9 3','Pur\u00e9 prote\u00edna 3','Men\u00fa semientero','Men\u00fa entero'];
   const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -315,13 +363,318 @@
     (payR.data||[]).forEach(function(r){ payMap[dateToMonthKey(r[S.payments.month])] = !!r[S.payments.paid]; });
     CACHE.paymentsByFamily[familyId] = payMap;
   }
+  // Lee una tabla entera por p\u00e1ginas de 1000 (Supabase corta en 1000 filas por petici\u00f3n).
+  async function fetchAllRows(table, cols, orderCol){
+    var out = [], from = 0, size = 1000;
+    for (;;){
+      var { data, error } = await supabase.from(table).select(cols).order(orderCol).range(from, from + size - 1);
+      if (error){ console.error(table, error); return null; }
+      out = out.concat(data || []);
+      if (!data || data.length < size) return out;
+      from += size;
+    }
+  }
   async function fetchAllFamilies(){
     var { data, error } = await supabase.from(S.families.table).select('*').order(S.families.code);
     if (error){ console.error('families', error); return; }
-    CACHE.families = data || [];
-    // Para el admin: cargamos el bundle de cada familia. En una app con
-    // muchas familias esto se podr\u00eda paginar; con ~13 es asumible.
-    await Promise.all(CACHE.families.map(function(f){ return fetchFamilyBundle(f[S.families.id]); }));
+    var fams = data || [];
+    // Admin: 4 consultas para todas las familias (antes eran 4 por familia).
+    var res = await Promise.all([
+      fetchAllRows(S.children.table, '*', S.children.id),
+      fetchAllRows(S.family_menus.table, '*', S.family_menus.familyId),
+      fetchAllRows(S.absences.table, S.absences.familyId + ',' + S.absences.date, S.absences.id),
+      fetchAllRows(S.payments.table, '*', S.payments.id)
+    ]);
+    CACHE.families = fams;
+    if (res.some(function(x){ return x === null; })){
+      // Si algo falla, se vuelve al m\u00e9todo anterior, familia a familia.
+      await Promise.all(fams.map(function(f){ return fetchFamilyBundle(f[S.families.id]); }));
+      return;
+    }
+    var child = {}, menu = {}, abs = {}, pay = {};
+    fams.forEach(function(f){ var id = f[S.families.id]; child[id] = {}; menu[id] = ''; abs[id] = []; pay[id] = {}; });
+    res[0].forEach(function(r){ child[r[S.children.familyId]] = r; });
+    res[1].forEach(function(r){ menu[r[S.family_menus.familyId]] = r[S.family_menus.menuType] || ''; });
+    res[2].forEach(function(r){ var k = r[S.absences.familyId]; (abs[k] = abs[k] || []).push(r[S.absences.date]); });
+    res[3].forEach(function(r){ var k = r[S.payments.familyId]; (pay[k] = pay[k] || {})[dateToMonthKey(r[S.payments.month])] = !!r[S.payments.paid]; });
+    CACHE.childByFamily = child; CACHE.menuByFamily = menu; CACHE.absencesByFamily = abs; CACHE.paymentsByFamily = pay;
+  }
+
+  // ---- Historial de cambios / avisos (solo admin) ----
+  var ACTIVITY = [];
+  var LASTSEEN_KEY = 'comedor_actividad_vista';
+  function getLastSeen(){ try { return localStorage.getItem(LASTSEEN_KEY) || ''; } catch(e){ return ''; } }
+  function setLastSeen(v){ try { localStorage.setItem(LASTSEEN_KEY, v); } catch(e){} }
+  async function fetchActivity(){
+    try {
+      var { data, error } = await supabase.from('audit_log').select('*').order('at', { ascending: false }).limit(60);
+      if (error){ console.warn('audit_log', error.message); return; }
+      ACTIVITY = data || [];
+    } catch(e){ console.warn(e); }
+  }
+  function unreadCount(){
+    var ls = getLastSeen();
+    return ACTIVITY.filter(function(a){ return !a.actor_is_admin && (!ls || a.at > ls); }).length;
+  }
+  var CAMPOS = { name:'nombre', tutor_name:'tutor', phone:'teléfono', classroom:'gela', allergies:'alergias', menu_type:'menú', price_base:'precio', iva_pct:'IVA', gasca_email:'email de Gasca', admin_phone:'teléfono admin', service_start_date:'inicio del servicio', active:'estado', paid:'pago', reason:'motivo', code:'nombre' };
+  function fmtDia(d){ var p = String(d||'').split('-'); return p.length>=3 ? (parseInt(p[2],10)+'/'+parseInt(p[1],10)) : String(d||''); }
+  function fmtCuando(iso){
+    var d = new Date(iso); if (isNaN(d)) return '';
+    return d.getDate()+'/'+(d.getMonth()+1)+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+  function activityText(a){
+    var d = a.detail || {};
+    var quien = a.actor_is_admin ? 'Tú' : (a.family_id ? familyLabel(a.family_id) : 'Alguien');
+    var ch = (d.changed || []).map(function(k){ return CAMPOS[k] || k; }).join(', ');
+    switch (a.table_name){
+      case 'absences': return quien + (a.action==='insert' ? ': no asiste el ' : ': vuelve a asistir el ') + fmtDia(d.date);
+      case 'children': return quien + (a.action==='insert' ? ': creó el perfil' : ': cambió ' + (ch||'el perfil'));
+      case 'family_menus': return quien + ': menú ' + (d.before ? d.before + ' → ' : '') + (d.menu||'');
+      case 'payments': var mm = String(d.month||'').slice(5,7); return quien + ': pago de ' + (MESES[parseInt(mm,10)-1]||d.month) + ' ' + (d.paid ? 'marcado como pagado' : 'marcado como pendiente');
+      case 'service_days': return quien + ': día sin servicio ' + fmtDia(d.date) + (a.action==='delete' || d.active===false ? ' quitado' : ' añadido');
+      case 'settings': return quien + ': cambió ajustes' + (ch ? ' (' + ch + ')' : '');
+      case 'families':
+        if (a.action === 'insert') return quien + ': familia creada';
+        var fn = a.family_id ? familyLabel(a.family_id) : 'familia';
+        if (d.baja_desde) return quien + ': ' + fn + (d.active === false ? ' de baja desde el ' : ' con baja programada el ') + fmtDia(d.baja_desde);
+        return quien + ': ' + fn + (d.active === false ? ' dada de baja' : ' dada de alta');
+      case 'pin_codes': return quien + ': cambió su PIN';
+      default: return quien + ': ' + a.table_name + ' ' + a.action;
+    }
+  }
+  function toast(msg){
+    var t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+    document.body.appendChild(t); setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 6500);
+  }
+  // ---- Avisos push con la app cerrada (solo admin) ----
+  const VAPID_PUBLIC = 'BIw4QovnLOQB0-knt_7pU0WntXygR4ECzu8_dDuNru9W-ItbqrWk2bCFDK9Myh30Go6bcSV41aELxJf62bx0jEo';
+  var PUSH_STATE = 'unknown'; // unsupported | ios-install | denied | off | on
+  function b64ToBytes(b64){
+    var pad = '='.repeat((4 - b64.length % 4) % 4);
+    var raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+    var out = new Uint8Array(raw.length); for (var i=0;i<raw.length;i++) out[i] = raw.charCodeAt(i); return out;
+  }
+  async function refreshPushState(){
+    try {
+      if (isIOS && !isStandalone){ PUSH_STATE = 'ios-install'; return; }
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !window.Notification){ PUSH_STATE = 'unsupported'; return; }
+      if (Notification.permission === 'denied'){ PUSH_STATE = 'denied'; return; }
+      var reg = await navigator.serviceWorker.getRegistration();
+      var sub = reg && await reg.pushManager.getSubscription();
+      PUSH_STATE = sub ? 'on' : 'off';
+    } catch(e){ PUSH_STATE = 'unsupported'; }
+  }
+  async function enablePush(){
+    try {
+      var perm = await Notification.requestPermission();
+      if (perm !== 'granted'){ showModal('No has dado permiso para las notificaciones. Puedes activarlo en los ajustes del navegador o del móvil.'); await refreshPushState(); render(); return; }
+      var reg = await navigator.serviceWorker.ready;
+      var sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(VAPID_PUBLIC) });
+      var j = sub.toJSON();
+      var { error } = await supabase.from('push_subscriptions').upsert({ endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'endpoint' });
+      if (error){ showModal('No se ha podido guardar el aviso en Supabase: ' + error.message + ' (¿has ejecutado supabase_avisos_push.sql?)'); return; }
+      PUSH_STATE = 'on'; toast('✅ Avisos activados en este dispositivo'); render();
+    } catch(e){ showModal('No se han podido activar los avisos: ' + (e && e.message ? e.message : e)); }
+  }
+  async function disablePush(){
+    try {
+      var reg = await navigator.serviceWorker.getRegistration();
+      var sub = reg && await reg.pushManager.getSubscription();
+      if (sub){ await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint); await sub.unsubscribe(); }
+    } catch(e){}
+    PUSH_STATE = 'off'; render();
+  }
+  function pushSectionHtml(){
+    var h = '<div style="background:var(--verde-suave);border-radius:10px;padding:10px;margin:0 0 10px;"><p style="margin:0 0 4px;font-weight:700;font-size:0.9rem;">Avisos con la app cerrada</p>';
+    if (PUSH_STATE === 'on') h += '<p class="hint" style="margin:0 0 6px;">✅ Activados en este dispositivo. Te llega un aviso agrupado como mucho cada 5 minutos.</p><button class="btn small" id="push-off">Desactivar</button>';
+    else if (PUSH_STATE === 'off') h += '<p class="hint" style="margin:0 0 6px;">Recibe una notificación en el móvil cuando una familia haga cambios.</p><button class="btn small primary" id="push-on">Activar en este dispositivo</button>';
+    else if (PUSH_STATE === 'ios-install') h += '<p class="hint" style="margin:0;">En iPhone primero instala la app: <b>Compartir → Añadir a pantalla de inicio</b>, ábrela desde el icono y vuelve aquí.</p>';
+    else if (PUSH_STATE === 'denied') h += '<p class="hint" style="margin:0;">Las notificaciones están bloqueadas para esta web. Permítelas en los ajustes del navegador y recarga.</p>';
+    else h += '<p class="hint" style="margin:0;">Este navegador no admite avisos. Prueba con Chrome en Android o con la app instalada en iPhone.</p>';
+    return h + '</div>';
+  }
+
+  var NOTIFIED = {};
+  function onNewActivity(a){
+    if (NOTIFIED[a.id]) return;
+    NOTIFIED[a.id] = true;
+    if (!ACTIVITY.some(function(x){ return x.id === a.id; })){ ACTIVITY.unshift(a); if (ACTIVITY.length > 60) ACTIVITY.pop(); }
+    if (a.actor_is_admin){ return; }
+    var txt = activityText(a);
+    toast('🔔 ' + txt);
+    try {
+      if (window.Notification && Notification.permission === 'granted' && document.hidden){
+        new Notification('Comedor Basurto', { body: txt, icon: 'icon-192.png' });
+      }
+    } catch(e){}
+    try { if (ROLE === 'admin') safeRender(); } catch(e){}
+  }
+  function activityPanelHtml(){
+    var h = pushSectionHtml() + '<p style="margin:0 0 6px;font-weight:700;">Cambios recientes</p>';
+    var ls = getLastSeen();
+    if (!ACTIVITY.length) h += '<p class="hint">Todavía no hay cambios registrados (o falta ejecutar el SQL de mejoras en Supabase).</p>';
+    ACTIVITY.slice(0, 40).forEach(function(a){
+      var nuevo = !a.actor_is_admin && (!ls || a.at > ls);
+      h += '<div class="act-item'+(nuevo?' nuevo':'')+'">'+esc(activityText(a))+'<span class="when">'+esc(fmtCuando(a.at))+'</span></div>';
+    });
+    return h;
+  }
+
+  // ---- Cierre de mes, previsión, resumen por gela, copia ----
+  // ---- Baja con fecha ----
+  // baja_desde = primer d\u00eda que ya no come. Sin fecha y active=false = baja antigua (sin fecha).
+  function famRow(fid){ return CACHE.families.find(function(f){ return f[S.families.id] === fid; }) || null; }
+  function bajaOf(f){ return (f && f.baja_desde) ? String(f.baja_desde).slice(0,10) : null; }
+  function bajaDesde(fid){ return bajaOf(famRow(fid)); }
+  function outOn(fid, date){ var b = bajaDesde(fid); return !!(b && date >= b); }
+  function legacyOut(f){ return f.active === false && !bajaOf(f); }
+  function activeNow(f){ var b = bajaOf(f); return f.active !== false && !(b && b <= todayIso()); }
+  function fmtFecha(d){ var p = String(d||'').split('-'); return p.length>=3 ? (parseInt(p[2],10)+' de '+MESES[parseInt(p[1],10)-1]+' de '+p[0]) : String(d||''); }
+  function nextMondayIso(){ var t = new Date(); var m = mondayOf(iso(t.getFullYear(), t.getMonth(), t.getDate())); m.setDate(m.getDate()+7); return iso(m.getFullYear(), m.getMonth(), m.getDate()); }
+  function bajaLabel(f){
+    var b = bajaOf(f);
+    if (b) return b <= todayIso() ? ' (baja desde ' + fmtDia(b) + ')' : ' (baja el ' + fmtDia(b) + ')';
+    return f.active === false ? ' (de baja)' : '';
+  }
+  function activeFamilies(){ return CACHE.families.filter(activeNow); }
+  // Familias que comen ese d\u00eda si no han marcado ausencia (con men\u00fa, no de baja)
+  function eligibleOn(date){
+    if (CACHE.serviceDays.indexOf(date) !== -1) return [];
+    return CACHE.families.filter(function(f){
+      var fid = f[S.families.id];
+      return !legacyOut(f) && !outOn(fid, date) && !!CACHE.menuByFamily[fid];
+    });
+  }
+  function mealsOnDate(date){
+    return eligibleOn(date).filter(function(f){
+      return (CACHE.absencesByFamily[f[S.families.id]]||[]).indexOf(date) === -1;
+    }).length;
+  }
+  function monthStats(y,m){
+    var st = { fam: 0, billed: 0, paid: 0, paidCount: 0, pending: [] };
+    var mk = monthKey(y,m);
+    CACHE.families.forEach(function(f){
+      var fid = f[S.families.id], due = familyDue(fid,y,m);
+      if (due.count <= 0) return;
+      st.fam++; st.billed += due.total;
+      var pagado = !!(CACHE.paymentsByFamily[fid] && CACHE.paymentsByFamily[fid][mk]);
+      if (pagado){ st.paid += due.total; st.paidCount++; }
+      else st.pending.push({ fid: fid, due: due, wa: waLink(fid, due, y, m) });
+    });
+    return st;
+  }
+  var REMINDED = {};
+  function cierreCardHtml(y,m){
+    var st = monthStats(y,m), mk = monthKey(y,m);
+    var h = '<div class="card"><p style="margin:0 0 8px;font-weight:700;">Cierre de '+MESES[m]+'</p>' +
+      '<div class="kpis"><div class="kpi"><b>'+money(st.billed)+'</b><span>A cobrar</span></div>' +
+      '<div class="kpi"><b>'+money(st.paid)+'</b><span>Cobrado ('+st.paidCount+'/'+st.fam+')</span></div>' +
+      '<div class="kpi"><b>'+money(st.billed-st.paid)+'</b><span>Pendiente</span></div></div>';
+    if (!st.pending.length){
+      h += '<p class="hint" style="margin:0;">'+(st.fam ? '✅ Todas las familias han pagado.' : 'Sin comidas este mes.')+'</p>';
+    } else {
+      h += '<table class="mini">';
+      st.pending.forEach(function(p){
+        h += '<tr><td>'+esc(familyLabel(p.fid))+'</td><td>'+money(p.due.total)+'</td><td>'+(REMINDED[mk+p.fid]?'<span class="hint">recordado</span>':(p.wa?'':'<span class="hint">sin tel.</span>'))+'</td></tr>';
+      });
+      h += '</table>';
+      var sig = st.pending.filter(function(p){ return p.wa && !REMINDED[mk+p.fid]; })[0];
+      if (sig){
+        var left = st.pending.filter(function(p){ return p.wa && !REMINDED[mk+p.fid]; }).length;
+        h += '<p style="margin:10px 0 0;"><a class="btn primary" id="remind-next" data-fid="'+esc(sig.fid)+'" href="'+sig.wa+'" target="_blank" rel="noopener">Recordar a '+esc(familyLabel(sig.fid))+' ('+left+' por avisar)</a></p>' +
+          '<p class="hint" style="margin:6px 0 0;">Se abre WhatsApp con el mensaje listo; envíalo y vuelve aquí para pasar a la siguiente.</p>';
+      }
+    }
+    return h + '</div>';
+  }
+  function bindCierre(y,m){
+    var b = document.getElementById('remind-next');
+    if (b) b.addEventListener('click', function(){
+      REMINDED[monthKey(y,m) + b.getAttribute('data-fid')] = true;
+      setTimeout(function(){ renderAdmin(root()); }, 400);
+    });
+  }
+  function previsionCardHtml(y,m){
+    var today = todayIso(), weeks = {}, total = 0, restantes = 0, noConsumidas = 0, diasServicio = 0, famMes = {};
+    weekdaysOfMonth(y,m).forEach(function(d){
+      var date = iso(d.getFullYear(), d.getMonth(), d.getDate());
+      if (CACHE.serviceDays.indexOf(date) !== -1) return;
+      diasServicio++;
+      var eleg = eligibleOn(date);
+      eleg.forEach(function(f){ famMes[f[S.families.id]] = true; });
+      var n = mealsOnDate(date);
+      total += n; if (date >= today) restantes += n;
+      noConsumidas += eleg.length - n;
+      var mon = mondayOf(date), key = iso(mon.getFullYear(), mon.getMonth(), mon.getDate());
+      weeks[key] = (weeks[key]||0) + n;
+    });
+    var pb = CACHE.settings.price_base, iva = CACHE.settings.iva_pct/100;
+    var h = '<div class="card"><p style="margin:0 0 8px;font-weight:700;">Previsión de '+MESES[m]+'</p>' +
+      '<div class="kpis"><div class="kpi"><b>'+total+'</b><span>Comidas previstas</span></div>' +
+      '<div class="kpi"><b>'+money(total*pb)+'</b><span>Sin IVA</span></div>' +
+      '<div class="kpi"><b>'+money(total*pb*(1+iva))+'</b><span>Con IVA</span></div></div>' +
+      '<p class="hint" style="margin:0 0 8px;">'+diasServicio+' días de servicio · '+Object.keys(famMes).length+' familias con comedor · '+restantes+' comidas desde hoy · '+noConsumidas+' comidas ahorradas por bajas ('+money(noConsumidas*pb*(1+iva))+').</p>' +
+      '<table class="mini"><tr><th>Semana del</th><th>Comidas</th></tr>';
+    Object.keys(weeks).sort().forEach(function(k){ h += '<tr><td>'+fmtDia(k)+'</td><td>'+weeks[k]+'</td></tr>'; });
+    return h + '</table></div>';
+  }
+  function gelaData(){
+    var gelas = {}, menus = {};
+    activeFamilies().forEach(function(f){
+      var fid = f[S.families.id], ch = CACHE.childByFamily[fid] || {};
+      var g = String(ch[S.children.gela]||'').trim() || 'Sin gela';
+      var mn = CACHE.menuByFamily[fid] || 'Sin menú';
+      gelas[g] = gelas[g] || { n: 0, menus: {}, alerg: [] };
+      gelas[g].n++; gelas[g].menus[mn] = (gelas[g].menus[mn]||0)+1;
+      menus[mn] = (menus[mn]||0)+1;
+      var al = pdfAlergia(ch[S.children.alergias]);
+      if (al) gelas[g].alerg.push(familyLabel(fid) + ' (' + al.toLowerCase() + ')');
+    });
+    return { gelas: gelas, menus: menus };
+  }
+  function gelaText(){
+    var d = gelaData(), lines = [];
+    Object.keys(d.gelas).sort().forEach(function(g){
+      var x = d.gelas[g];
+      lines.push('Gela ' + g + ': ' + x.n + ' niños/as — ' + Object.keys(x.menus).map(function(k){ return x.menus[k]+' '+k; }).join(', ') + (x.alerg.length ? ' — Alergias: ' + x.alerg.join('; ') : ''));
+    });
+    lines.push('Total por menú: ' + Object.keys(d.menus).sort().map(function(k){ return d.menus[k]+' '+k; }).join(', '));
+    return lines.join('\n');
+  }
+  function gelaCardHtml(){
+    var d = gelaData();
+    var h = '<div class="card"><p style="margin:0 0 8px;font-weight:700;">Resumen por gela y menú</p><table class="mini"><tr><th>Gela</th><th>Niños</th><th>Menús</th></tr>';
+    Object.keys(d.gelas).sort().forEach(function(g){
+      var x = d.gelas[g];
+      h += '<tr><td>'+esc(g)+'</td><td>'+x.n+'</td><td>'+Object.keys(x.menus).map(function(k){ return x.menus[k]+' × '+esc(k); }).join('<br>')+
+        (x.alerg.length ? '<br><span class="hint">⚠️ '+esc(x.alerg.join('; '))+'</span>' : '')+'</td></tr>';
+    });
+    h += '</table><p style="margin:10px 0 4px;font-weight:700;font-size:0.9rem;">Total por menú</p><p class="hint" style="margin:0 0 8px;">' +
+      Object.keys(d.menus).sort().map(function(k){ return esc(k)+': <b>'+d.menus[k]+'</b>'; }).join(' · ') + '</p>' +
+      '<button class="btn small" id="copy-gela">Copiar resumen</button></div>';
+    return h;
+  }
+  function backupCardHtml(){
+    return '<div class="card"><p style="margin:0 0 4px;font-weight:700;">Copia de seguridad</p>' +
+      '<p class="hint" style="margin:0 0 8px;">Descarga todos los datos (familias, perfiles, menús, días, pagos y ajustes) en un archivo. Los PIN no se incluyen. Supabase guarda además una copia interna cada domingo.</p>' +
+      '<button class="btn small" id="download-backup">Descargar copia (JSON)</button></div>';
+  }
+  function downloadBackup(){
+    var data = {
+      exportado: new Date().toISOString(),
+      ajustes: CACHE.settings, dias_sin_servicio: CACHE.serviceDays,
+      familias: CACHE.families.map(function(f){
+        var fid = f[S.families.id];
+        return { familia: f, perfil: CACHE.childByFamily[fid] || null, menu: CACHE.menuByFamily[fid] || null,
+                 ausencias: CACHE.absencesByFamily[fid] || [], pagos: CACHE.paymentsByFamily[fid] || {} };
+      })
+    };
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a'); var t = new Date();
+    a.href = URL.createObjectURL(blob);
+    a.download = 'copia_comedor_basurto_' + iso(t.getFullYear(), t.getMonth(), t.getDate()) + '.json';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 500);
   }
 
   async function loadForRole(){
@@ -329,9 +682,13 @@
     await fetchServiceDays();
     if (ROLE === 'admin'){
       await fetchAllFamilies();
+      await fetchActivity();
+      await refreshPushState();
       if (!view.adminFamilyId && CACHE.families.length) view.adminFamilyId = CACHE.families[0][S.families.id];
     } else if (ROLE === 'family' && MY_FAMILY_ID){
       await fetchFamilyBundle(MY_FAMILY_ID);
+      var { data: famData } = await supabase.from(S.families.table).select('*').eq(S.families.id, MY_FAMILY_ID).maybeSingle();
+      CACHE.families = famData ? [famData] : [];
     }
   }
 
@@ -406,16 +763,29 @@
     if (error){ showModal('No se ha podido cambiar el PIN: ' + error.message + ' (\u00bfhas creado la funci\u00f3n ' + RPC_ADMIN_SET_PIN + '? ver instrucciones adjuntas)'); return false; }
     return true;
   }
-  async function setFamilyActive(familyId, activa){
-    var { error } = await supabase.rpc(RPC_ADMIN_SET_ACTIVE, { p_family_id: familyId, p_active: activa });
+  async function setFamilyActive(familyId, activa, desde){
+    var args = { p_family_id: familyId, p_active: activa };
+    if (!activa && desde) args.p_since = desde;
+    var { error } = await supabase.rpc(RPC_ADMIN_SET_ACTIVE, args);
+    var sinFecha = false;
+    if (error && args.p_since && /p_since|PGRST202|schema cache|function/i.test((error.message||'') + ' ' + (error.code||''))){
+      // La base de datos todav\u00eda no admite bajas con fecha (falta ejecutar el SQL)
+      if (!window.confirm('Supabase todav\u00eda no admite bajas con fecha (falta ejecutar el SQL nuevo).\n\n\u00bfDar de baja desde HOY, como antes?')) return false;
+      args = { p_family_id: familyId, p_active: activa }; sinFecha = true;
+      ({ error } = await supabase.rpc(RPC_ADMIN_SET_ACTIVE, args));
+    }
     if (error){
       console.error(error);
       showModal('No se ha podido cambiar el estado de la familia: ' + error.message + ' (\u00bfhas creado la funci\u00f3n ' + RPC_ADMIN_SET_ACTIVE + ' en Supabase?)');
       return false;
     }
     var fam = CACHE.families.find(function(f){ return f[S.families.id] === familyId; });
-    if (fam) fam.active = activa;
-    setNote(activa ? 'Familia dada de alta.' : 'Familia dada de baja.');
+    if (fam){
+      if (activa){ fam.active = true; fam.baja_desde = null; }
+      else if (sinFecha || !desde){ fam.active = false; }
+      else { fam.baja_desde = desde; fam.active = desde > todayIso(); }
+    }
+    setNote(activa ? 'Familia dada de alta.' : (desde && !sinFecha && desde > todayIso() ? 'Baja programada.' : 'Familia dada de baja.'));
     return true;
   }
 
@@ -440,8 +810,8 @@
       if (CACHE.serviceDays.indexOf(date) !== -1){ lines.push({label:label, date:d, sinServicio:true}); return; }
       var porMenu = {}, count = 0;
       CACHE.families.forEach(function(f){
-        if (f.active === false) return;
         var fid = f[S.families.id];
+        if (legacyOut(f) || outOn(fid, date)) return;
         var tipo = CACHE.menuByFamily[fid];
         if (!tipo) return;
         var bajas = CACHE.absencesByFamily[fid] || [];
@@ -449,7 +819,7 @@
         count++;
         var child = CACHE.childByFamily[fid] || {};
         var al = (child[S.children.alergias]||'').trim();
-        var esAlergico = al && al.toLowerCase() !== 'sin alergias' && al.toLowerCase() !== 'ninguna';
+        var esAlergico = !!pdfAlergia(al);
         var key = esAlergico ? (tipo + ' \u2013 ' + (child[S.children.nino]||f[S.families.code]) + ' (alergia: ' + al + ')') : tipo;
         porMenu[key] = (porMenu[key]||0) + 1;
       });
@@ -702,7 +1072,7 @@
   function listadoRows(){
     var arr = [];
     CACHE.families.forEach(function(f){
-      if (f.active === false) return;
+      if (!activeNow(f)) return;
       var fid = f[S.families.id];
       var ch = CACHE.childByFamily[fid] || {};
       arr.push({
@@ -748,6 +1118,7 @@
       var date = iso(d.getFullYear(), d.getMonth(), d.getDate());
       if (CACHE.serviceDays.indexOf(date) !== -1) return;
       if (bajas.indexOf(date) !== -1) return;
+      if (outOn(familyId, date)) return;
       count++;
     });
     var total = count * CACHE.settings.price_base * (1 + CACHE.settings.iva_pct/100);
@@ -786,16 +1157,19 @@
       var date = iso(d.getFullYear(), d.getMonth(), d.getDate());
       var festivo = CACHE.serviceDays.indexOf(date) !== -1;
       var baja = bajas.indexOf(date) !== -1;
-      var late = !festivo && deadlineInfo(date).late;
-      var cls = 'cal-cell ' + (festivo ? 'festivo' : (baja ? 'baja' : 'asiste')) + (late ? ' late' : '') + (editable && !festivo ? '' : ' readonly');
-      var ico = festivo ? '' : (baja ? '<span class="ico">\ud83c\udfe0</span>' : '<span class="ico">\ud83c\udf7d\ufe0f</span>');
-      html += '<div class="'+cls+'"' + (editable && !festivo ? ' data-date="'+date+'"' : '') + '>' + ico + d.getDate() + '</div>';
+      var out = !festivo && outOn(familyId, date);
+      var late = !festivo && !out && deadlineInfo(date).late;
+      var tocable = editable && !festivo && !out;
+      var cls = 'cal-cell ' + (festivo ? 'festivo' : (out ? 'out' : (baja ? 'baja' : 'asiste'))) + (late ? ' late' : '') + (tocable ? '' : ' readonly');
+      var ico = (festivo || out) ? '' : (baja ? '<span class="ico">\ud83c\udfe0</span>' : '<span class="ico">\ud83c\udf7d\ufe0f</span>');
+      html += '<div class="'+cls+'"' + (tocable ? ' data-date="'+date+'"' : '') + (out ? ' title="De baja en el comedor"' : '') + '>' + ico + d.getDate() + '</div>';
     });
     html += '</div><div class="legend">' +
       '<span><span class="dot" style="background:var(--verde)"></span>Asiste</span>' +
       '<span><span class="dot" style="background:var(--naranja)"></span>No asiste</span>' +
       '<span><span class="dot" style="background:var(--gris-fest)"></span>Festivo</span>' +
       '<span><span class="dot" style="background:var(--rojo)"></span>Aviso fuera de plazo</span>' +
+      (bajaDesde(familyId) ? '<span><span class="dot" style="background:repeating-linear-gradient(135deg,var(--gris-fest) 0 3px,transparent 3px 6px);border:1px solid var(--gris-fest);"></span>De baja</span>' : '') +
       '</div>';
     return html;
   }
@@ -893,8 +1267,9 @@
       '<div class="grid-roles">' +
       '<button class="btn primary" id="choose-family">Soy una familia</button>' +
       '<button class="btn" id="choose-admin">Soy el admin</button>' +
-      '</div></div>';
+      '</div></div>' + installHtml();
     r.innerHTML = html;
+    bindInstall();
     document.getElementById('choose-family').addEventListener('click', function(){ view.loginMode='family'; view.loginError=null; render(); });
     document.getElementById('choose-admin').addEventListener('click', function(){ view.loginMode='admin'; view.loginError=null; render(); });
   }
@@ -942,7 +1317,7 @@
       // 2) Reclamar la familia (comprueba el PIN en el servidor)
       var { data: claimData, error: claimErr } = await supabase.rpc(RPC_CLAIM_FAMILY, { p_family_code: code, p_pin: pin });
       if (claimErr) throw claimErr;
-      if (claimData === false){ throw new Error('Nombre o PIN incorrectos.'); }
+      if (claimData === false || (claimData && claimData.success === false)){ throw new Error('Nombre o PIN incorrectos.'); }
       await afterLoginResolveFamily();
     } catch (e){
       view.loginError = e.message || 'No se ha podido entrar.';
@@ -975,6 +1350,7 @@
     subscribeRealtime();
   }
   async function doLogout(){
+    if (realtimeChannel){ try { supabase.removeChannel(realtimeChannel); } catch(e){} realtimeChannel = null; }
     await supabase.auth.signOut();
     ROLE = null; MY_FAMILY_ID = null; view.loginMode = null;
     render();
@@ -993,7 +1369,13 @@
     var panelHtml = perfilFieldsHtml('', child, false) +
       '<div class="field"><label>Tipo de men\u00fa</label><p class="pin-chip" style="font-size:1rem;">'+esc(menuInfo||'Sin asignar')+'</p><p class="hint">Para cambiar el tipo de men\u00fa, contacta con el admin.</p>' +
       (waMenu ? '<p style="margin-top:6px;"><a class="btn small primary" href="'+waMenu+'" target="_blank" rel="noopener">Escribir por WhatsApp</a></p>' : '') + '</div>' +
-      '<button class="btn primary" id="save-perfil">Guardar perfil</button>';
+      '<button class="btn primary" id="save-perfil">Guardar perfil</button>' +
+      '<hr style="border:0;border-top:1px solid var(--line);margin:14px 0;">' +
+      '<div class="field"><label>Cambiar mi PIN (5 d\u00edgitos)</label>' +
+      '<input type="password" inputmode="numeric" maxlength="5" id="pin-new" placeholder="Nuevo PIN" style="margin-bottom:6px;">' +
+      '<input type="password" inputmode="numeric" maxlength="5" id="pin-new2" placeholder="Repite el nuevo PIN"></div>' +
+      '<button class="btn" id="save-pin">Cambiar PIN</button>' +
+      (installHtml() ? '<hr style="border:0;border-top:1px solid var(--line);margin:14px 0;">' + installHtml() : '');
     var html = '<div class="row"><h1>'+esc(familyLabel(familyId))+'</h1>' +
       '<div class="header-actions">' +
       '<button class="icon-btn" id="perfil-toggle" title="Perfil">\ud83d\udc64</button>' +
@@ -1001,7 +1383,9 @@
       '<div class="dropdown-panel" id="perfil-panel">'+panelHtml+'</div>' +
       '</div></div>' +
       '<p class="sub">Comedor \u00b7 catering Gasca</p>';
-    html += '<div class="banner mostaza">Para no asistir la semana que viene, avisa antes del jueves de esta semana.</div>';
+    var miBaja = bajaDesde(familyId);
+    if (miBaja) html += '<div class="banner rojo">Baja en el comedor desde el ' + esc(fmtFecha(miBaja)) + '. Desde ese d\u00eda ya no se cuentan comidas. Si es un error, habla con el admin.</div>';
+    html += '<div class="banner mostaza">Para no asistir la semana que viene, avisa como muy tarde el jueves de esta semana (hasta las 23:59).</div>';
     if (nearPaymentWindow()) html += '<div class="banner verde">Recuerda hacer el bizum al admin: debes pagarlo antes del d\u00eda 3 del mes siguiente.</div>';
     html += '<div class="card">' + monthNav(y,m) + calendarHtml(familyId,y,m,true) +
       '<div class="totals"><span>'+due.count+' comidas \u00b7 '+money(CACHE.settings.price_base*(1+CACHE.settings.iva_pct/100))+'/comida</span><span>'+money(due.total)+'</span></div></div>';
@@ -1012,6 +1396,17 @@
 
     document.getElementById('chrole').addEventListener('click', doLogout);
     bindDropdown('perfil-toggle', 'perfil-panel');
+    bindInstall();
+    document.getElementById('save-pin').addEventListener('click', async function(){
+      var a = document.getElementById('pin-new').value.trim();
+      var b = document.getElementById('pin-new2').value.trim();
+      if (!/^[0-9]{5}$/.test(a)){ showModal('El PIN debe tener exactamente 5 d\u00edgitos.'); return; }
+      if (a !== b){ showModal('Los dos PIN no coinciden.'); return; }
+      var { error } = await supabase.rpc(RPC_FAMILY_SET_PIN, { p_pin: a });
+      if (error){ showModal('No se ha podido cambiar el PIN: ' + error.message); return; }
+      showModal('PIN cambiado. \u00dasalo la pr\u00f3xima vez que entres.');
+      document.getElementById('pin-new').value=''; document.getElementById('pin-new2').value='';
+    });
     bindMonthNav(2026,9, 2027,6, function(){ renderFamilia(root()); });
     bindCalendarClicks(familyId, false, function(){ renderFamilia(root()); });
     document.getElementById('save-perfil').addEventListener('click', async function(){
@@ -1038,13 +1433,26 @@
     var child = CACHE.childByFamily[famId] || {};
     var famObj = CACHE.families.find(function(f){ return f[S.families.id] === famId; }) || {};
     var famActiva = famObj.active !== false;
+    var famBaja = bajaOf(famObj), hoyIso = todayIso();
+    var bajaProgramada = !!(famBaja && famBaja > hoyIso);
     var perfilPanelHtml = perfilFieldsHtml('-admin', child, true, CACHE.menuByFamily[famId]) + '<button class="btn primary" id="save-perfil-admin">Guardar perfil</button>' +
       '<hr style="border:none;border-top:1px solid var(--line);margin:16px 0;">' +
-      '<p style="margin:0 0 4px;font-weight:700;">Estado en el catering: ' + (famActiva ? 'Activa' : 'De baja') + '</p>' +
-      '<p class="hint" style="margin:0 0 8px;">' + (famActiva
-        ? 'Si la das de baja, deja de aparecer en el listado de la haurreskola y en el resumen de Gasca, y no podr\u00e1 entrar a la app.'
-        : 'Est\u00e1 de baja: no sale en el listado ni en el resumen de Gasca y no puede entrar a la app. Al darla de alta vuelve a todo con su mismo PIN.') + '</p>' +
-      '<button class="btn small' + (famActiva ? '' : ' primary') + '" id="toggle-baja">' + (famActiva ? 'Dar de baja' : 'Dar de alta') + '</button>';
+      estadoHtml();
+    function estadoHtml(){
+      var h = '<p style="margin:0 0 4px;font-weight:700;">Estado en el catering: ';
+      if (bajaProgramada){
+        h += 'Baja programada</p><p class="hint" style="margin:0 0 8px;">Deja el comedor el <b>' + esc(fmtFecha(famBaja)) + '</b>. Hasta entonces sigue en el listado, en Gasca y puede entrar a la app; desde ese d\u00eda no se cuentan comidas.</p>' +
+          '<button class="btn small" id="toggle-alta">Anular la baja</button>';
+      } else if (!famActiva || famBaja){
+        h += 'De baja' + (famBaja ? ' desde el ' + esc(fmtFecha(famBaja)) : '') + '</p><p class="hint" style="margin:0 0 8px;">No sale en el listado ni en Gasca y no puede entrar a la app. Al darla de alta vuelve a todo con su mismo PIN.</p>' +
+          '<button class="btn small primary" id="toggle-alta">Dar de alta</button>';
+      } else {
+        h += 'Activa</p><div class="field" style="margin:0 0 8px;"><label>Dar de baja desde (primer d\u00eda que ya no come)</label><input type="date" id="baja-fecha" value="' + nextMondayIso() + '"></div>' +
+          '<p class="hint" style="margin:0 0 8px;">Desde esa fecha no se cuentan comidas ni sale en Gasca o el listado, y ya no podr\u00e1 entrar. No hace falta marcar los d\u00edas uno a uno.</p>' +
+          '<button class="btn small" id="toggle-baja">Dar de baja</button>';
+      }
+      return h;
+    }
     var ajustesPanelHtml =
       '<div class="field"><label>Precio men\u00fa ni\u00f1o (sin IVA)</label><input type="number" step="0.01" id="set-precio" value="'+CACHE.settings.price_base+'"></div>' +
       '<div class="field"><label>IVA (%)</label><input type="number" step="1" id="set-iva" value="'+CACHE.settings.iva_pct+'"></div>' +
@@ -1066,9 +1474,11 @@
 
     var html = '<div class="row"><h1>Admin</h1>' +
       '<div class="header-actions">' +
+      '<span class="icon-wrap"><button class="icon-btn" id="actividad-toggle" title="Cambios recientes">\ud83d\udd14</button>' + (unreadCount() ? '<span class="badge">'+unreadCount()+'</span>' : '') + '</span>' +
       '<button class="icon-btn" id="perfil-admin-toggle" title="Perfil">\ud83d\udc64</button>' +
       '<button class="icon-btn" id="ajustes-toggle" title="Ajustes">\u2699\ufe0f</button>' +
       '<button class="btn ghost" id="chrole">Salir</button>' +
+      '<div class="dropdown-panel" id="actividad-panel">'+activityPanelHtml()+'</div>' +
       '<div class="dropdown-panel" id="perfil-admin-panel">'+perfilPanelHtml+'</div>' +
       '<div class="dropdown-panel" id="ajustes-panel">'+ajustesPanelHtml+'</div>' +
       '</div></div>' +
@@ -1077,22 +1487,25 @@
     html += '<div class="card"><div class="field"><label>Ver/editar calendario de</label><select id="fam-select">';
     CACHE.families.forEach(function(f){
       var fid = f[S.families.id];
-      html += '<option value="'+esc(fid)+'"'+(fid===famId?' selected':'')+'>'+esc(familyLabel(fid))+(f.active === false ? ' (de baja)' : '')+'</option>';
+      html += '<option value="'+esc(fid)+'"'+(fid===famId?' selected':'')+'>'+esc(familyLabel(fid)+bajaLabel(f))+'</option>';
     });
     html += '</select></div>' +
       monthNav(y,m) + calendarHtml(famId,y,m,true) + '</div>';
 
     html += '<div class="card"><p style="margin:0 0 8px;font-weight:700;">Pagos de '+MESES[m]+'</p><table class="pay"><tr><th>Familia</th><th>Men\u00fa</th><th>Comidas</th><th>Total</th><th>Bizum</th><th>WhatsApp</th></tr>';
-    CACHE.families.forEach(function(f){
+    var famsPago = CACHE.families.filter(activeNow).concat(CACHE.families.filter(function(f){ return !activeNow(f); }));
+    famsPago.forEach(function(f){
       var fid = f[S.families.id];
       var due = familyDue(fid, y, m);
       var pagado = !!(CACHE.paymentsByFamily[fid] && CACHE.paymentsByFamily[fid][monthKey(y,m)]);
+      if (!activeNow(f) && due.count === 0 && !pagado) return;
       var wa = due.count>0 ? waLink(fid, due, y, m) : null;
-      html += '<tr><td>'+esc(familyLabel(fid))+(f.active === false ? ' <span class="hint">(de baja)</span>' : '')+'</td><td>'+esc(CACHE.menuByFamily[fid]||'\u2014')+'</td><td>'+due.count+'</td><td>'+money(due.total)+'</td>' +
+      html += '<tr><td>'+esc(familyLabel(fid))+(bajaLabel(f) ? ' <span class="hint">'+esc(bajaLabel(f).trim())+'</span>' : '')+'</td><td>'+esc(CACHE.menuByFamily[fid]||'\u2014')+'</td><td>'+due.count+'</td><td>'+money(due.total)+'</td>' +
         '<td><span class="pay-chip '+(pagado?'si':'no')+'" data-pay="'+esc(fid)+'">'+(pagado?'\u2705 S\u00ed':'\u23f3 No')+'</span></td>' +
         '<td>'+(wa?'<a class="btn small primary" href="'+wa+'" target="_blank" rel="noopener">Enviar</a>':'<span class="hint">Sin tel\u00e9fono</span>')+'</td></tr>';
     });
     html += '</table></div>';
+    html += cierreCardHtml(y,m) + previsionCardHtml(y,m) + gelaCardHtml();
 
     html += '<div class="card"><p style="margin:0 0 8px;font-weight:700;">Resumen semanal para Gasca</p>' +
       '<div class="field"><label>Aviso para Gasca (opcional)</label>' +
@@ -1107,6 +1520,7 @@
       '<p class="hint" style="margin:0 0 8px;">PDF con clase, alumno, men\u00fa, alergias, aita/ama y tel\u00e9fono de cada familia.</p>' +
       '<div class="row"><button class="btn primary" id="pdf-listado">Descargar PDF</button>' +
       (puedeCompartirPdf() ? '<button class="btn small" id="pdf-compartir">Compartir PDF</button>' : '') + '</div></div>';
+    html += backupCardHtml();
 
     html += saveNoteHtml();
     r.innerHTML = html;
@@ -1114,13 +1528,43 @@
     document.getElementById('chrole').addEventListener('click', doLogout);
     bindDropdown('perfil-admin-toggle', 'perfil-admin-panel');
     bindDropdown('ajustes-toggle', 'ajustes-panel');
-    document.getElementById('toggle-baja').addEventListener('click', async function(){
+    bindDropdown('actividad-toggle', 'actividad-panel');
+    document.getElementById('actividad-toggle').addEventListener('click', function(){
+      // al abrir, las novedades se dan por vistas (la insignia desaparece en el siguiente repintado)
+      setLastSeen(new Date().toISOString());
+      var b = document.querySelector('.icon-wrap .badge'); if (b) b.style.display = 'none';
+    });
+    var pon = document.getElementById('push-on'); if (pon) pon.addEventListener('click', enablePush);
+    var poff = document.getElementById('push-off'); if (poff) poff.addEventListener('click', disablePush);
+    bindCierre(y,m);
+    var cg = document.getElementById('copy-gela');
+    if (cg) cg.addEventListener('click', function(){
+      var t = gelaText();
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function(){ toast('Resumen copiado'); }, function(){ showModal(t); });
+      else showModal(t);
+    });
+    document.getElementById('download-backup').addEventListener('click', downloadBackup);
+    var btnBaja = document.getElementById('toggle-baja');
+    if (btnBaja) btnBaja.addEventListener('click', async function(){
       var nombre = familyLabel(famId);
-      var msg = famActiva
-        ? '\u00bfDar de baja a ' + nombre + '?\n\nDejar\u00e1 de aparecer en el listado de la haurreskola y en el resumen de Gasca, y no podr\u00e1 entrar a la app. Sus pagos y d\u00edas anteriores se conservan, y podr\u00e1s darla de alta cuando quieras.'
+      var desde = (document.getElementById('baja-fecha') || {}).value || '';
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(desde)){ showModal('Elige la fecha desde la que ' + nombre + ' deja el comedor.'); return; }
+      var msg = '\u00bfDar de baja a ' + nombre + ' desde el ' + fmtFecha(desde) + '?\n\n' +
+        (desde > todayIso()
+          ? 'Hasta esa fecha todo sigue igual. Desde ese d\u00eda no se cuentan comidas, no sale en el listado ni en Gasca, y ya no podr\u00e1 entrar a la app.'
+          : 'Desde ese d\u00eda no se cuentan comidas, deja de salir en el listado y en Gasca, y no podr\u00e1 entrar a la app.') +
+        ' Sus pagos y d\u00edas anteriores se conservan, y podr\u00e1s darla de alta cuando quieras.';
+      if (!window.confirm(msg)) return;
+      if (await setFamilyActive(famId, false, desde)) renderAdmin(root());
+    });
+    var btnAlta = document.getElementById('toggle-alta');
+    if (btnAlta) btnAlta.addEventListener('click', async function(){
+      var nombre = familyLabel(famId);
+      var msg = bajaProgramada
+        ? '\u00bfAnular la baja programada de ' + nombre + '?\n\nSeguir\u00e1 en el comedor como hasta ahora.'
         : '\u00bfDar de alta de nuevo a ' + nombre + '?\n\nVolver\u00e1 al listado y al resumen de Gasca, y podr\u00e1 entrar con su mismo PIN.';
       if (!window.confirm(msg)) return;
-      if (await setFamilyActive(famId, !famActiva)) renderAdmin(root());
+      if (await setFamilyActive(famId, true)) renderAdmin(root());
     });
     document.getElementById('fam-select').addEventListener('change', function(e){ view.adminFamilyId = e.target.value; renderAdmin(root()); });
     bindMonthNav(2026,9, 2027,6, function(){ renderAdmin(root()); });
@@ -1223,16 +1667,42 @@
   // esto a\u00f1ade adem\u00e1s la actualizaci\u00f3n autom\u00e1tica cuando cambia OTRO.)
   // ---------------------------------------------------------------------
   var realtimeChannel = null;
+  // Recarga agrupada: varios cambios seguidos (p. ej. una familia marca 5 d\u00edas) = 1 sola recarga.
+  var reloadTimer = null, pendingRender = false;
+  function userIsBusy(){
+    var a = document.activeElement;
+    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;
+    if (document.querySelector('.dropdown-panel.open')) return true;
+    var m = document.getElementById('app-modal'); if (m && m.classList.contains('open')) return true;
+    return false;
+  }
+  function safeRender(){
+    if (userIsBusy()){ pendingRender = true; return; }
+    pendingRender = false; render();
+  }
+  function scheduleReload(){
+    clearTimeout(reloadTimer);
+    reloadTimer = setTimeout(async function(){ await loadForRole(); safeRender(); }, 700);
+  }
+  setInterval(function(){ if (pendingRender && !userIsBusy()){ pendingRender = false; render(); } }, 1500);
+  // Tocar fuera de un panel desplegable lo cierra (dentro del panel y en su bot\u00f3n no, porque paran el clic)
+  document.addEventListener('click', function(e){
+    if (e.target && e.target.closest && e.target.closest('.icon-btn, .dropdown-panel, #app-modal')) return;
+    document.querySelectorAll('.dropdown-panel.open').forEach(function(p){ p.classList.remove('open'); });
+  });
   function subscribeRealtime(){
     if (realtimeChannel) supabase.removeChannel(realtimeChannel);
     var tables = [S.absences.table, S.family_menus.table, S.payments.table, S.service_days.table, S.children.table, S.settings.table];
     realtimeChannel = supabase.channel('comedor-live');
     tables.forEach(function(t){
-      realtimeChannel.on('postgres_changes', { event: '*', schema: 'public', table: t }, async function(){
-        await loadForRole();
-        render();
-      });
+      realtimeChannel.on('postgres_changes', { event: '*', schema: 'public', table: t }, function(){ scheduleReload(); });
     });
+    if (ROLE === 'admin'){
+      realtimeChannel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_log' }, function(payload){
+        if (payload && payload.new){ onNewActivity(payload.new); }
+        scheduleReload();
+      });
+    }
     realtimeChannel.subscribe();
   }
 
@@ -1272,6 +1742,7 @@
     }
     if (ROLE){ await loadForRole(); subscribeRealtime(); }
     render();
+    appReady = true;
 
     supabase.auth.onAuthStateChange(function(event){
       if (event === 'SIGNED_OUT'){ ROLE = null; MY_FAMILY_ID = null; render(); }
