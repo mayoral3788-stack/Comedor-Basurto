@@ -1,5 +1,5 @@
 // Service worker mínimo: la app siempre pide datos a Supabase, solo se cachea la "cáscara".
-const CACHE = 'comedor-v5';
+const CACHE = 'comedor-v6';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).catch(()=>{})); self.skipWaiting(); });
 self.addEventListener('activate', e => {
@@ -26,8 +26,14 @@ self.addEventListener('push', e => {
 });
 self.addEventListener('notificationclick', e => {
   e.notification.close();
+  const url = new URL((e.notification.data && e.notification.data.url) || './', self.registration.scope).href;
+  const conAccion = url.indexOf('accion=') !== -1;   // p. ej. el recordatorio del viernes abre el resumen
   e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(ws => {
-    for (const w of ws) { if ('focus' in w) return w.focus(); }
-    return clients.openWindow((e.notification.data && e.notification.data.url) || './');
+    for (const w of ws) {
+      if (!('focus' in w)) continue;
+      if (conAccion && 'navigate' in w) return w.navigate(url).then(c => (c || w).focus()).catch(() => clients.openWindow(url));
+      return w.focus();
+    }
+    return clients.openWindow(url);
   }));
 });

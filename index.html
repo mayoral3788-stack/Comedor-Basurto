@@ -133,8 +133,9 @@
 <body>
 <div id="root"><p class="empty-msg">Cargando\u2026</p></div>
 
-<!-- Librer\u00eda oficial de Supabase JS (v2) v\u00eda CDN -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Librería oficial de Supabase JS, versión fija (si no cargara, se usa la última 2.x) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
+<script>if (!window.supabase) document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/script>');</script>
 
 <script>
 (function(){
@@ -209,9 +210,9 @@
   function installHtml(){
     if (isStandalone) return '';
     if (!deferredInstall && !isIOS) return '';
-    return '<div class="card" style="margin-top:12px;"><p style="margin:0 0 8px;font-weight:700;">\ud83d\udcf2 Instala la app en tu m\u00f3vil</p>' +
-      (deferredInstall ? '<button class="btn primary" id="install-app">Instalar</button>'
-        : '<p class="hint" style="margin:0;">En iPhone: toca <b>Compartir</b> (cuadrado con flecha) y luego <b>A\u00f1adir a pantalla de inicio</b>.</p>') + '</div>';
+    return '<div class="card" style="margin-top:12px;"><p style="margin:0 0 8px;font-weight:700;">' + t('instala') + '</p>' +
+      (deferredInstall ? '<button class="btn primary" id="install-app">' + t('instalar') + '</button>'
+        : '<p class="hint" style="margin:0;">' + t('instala_ios') + '</p>') + '</div>';
   }
   function bindInstall(){
     var b = document.getElementById('install-app');
@@ -228,6 +229,104 @@
   const DIAS_C = ['L','M','X','J','V'];
   const FIRMA_ADMIN = 'Jon Mayoral';
   const DIAS_LARGOS = ['Lunes','Martes','Mi\u00e9rcoles','Jueves','Viernes'];
+  // ---- Idioma de la parte de las familias (castellano / euskera) ----
+  // El admin se ve siempre en castellano. La elección se recuerda en ese navegador.
+  const MESES_EU = ['urtarrila','otsaila','martxoa','apirila','maiatza','ekaina','uztaila','abuztua','iraila','urria','azaroa','abendua'];
+  const MESES_EU_GEN = ['urtarrilaren','otsailaren','martxoaren','apirilaren','maiatzaren','ekainaren','uztailaren','abuztuaren','irailaren','urriaren','azaroaren','abenduaren'];
+  const DIAS_C_EU = ['Al','Ar','Az','Og','Or'];
+  var LANG_KEY = 'comedor_idioma';
+  var LANG = (function(){
+    try { var s = localStorage.getItem(LANG_KEY); if (s === 'es' || s === 'eu') return s; } catch(e){}
+    return /^eu\b/i.test(navigator.language || '') ? 'eu' : 'es';
+  })();
+  function L(){ return ROLE === 'admin' ? 'es' : LANG; }
+  var TXT = {
+    es: {
+      app_title: 'Comedor – Haurreskola Basurto', app_sub: 'Control de asistencia y pagos del catering Gasca',
+      quien: '¿Quién eres?', soy_familia: 'Soy una familia', soy_admin: 'Soy el admin',
+      login_fam_sub: 'Introduce el nombre de tu hijo/a y el PIN que te dio el admin',
+      nombre_nino: 'Nombre del niño/a', ej_nombre: 'Ej: Irati', pin: 'PIN', cancelar: 'Cancelar', entrar: 'Entrar',
+      rellena: 'Rellena el nombre del niño/a y el PIN.', comprobando: 'Comprobando…', pin_mal: 'Nombre o PIN incorrectos.',
+      demasiados: 'Demasiados intentos. Vuelve a probar en unos minutos.', no_vincular: 'No se ha podido vincular tu familia.',
+      no_entrar: 'No se ha podido entrar.', sub_familia: 'Comedor · catering Gasca', salir: 'Salir', perfil: 'Perfil',
+      banner_baja: 'Baja en el comedor desde el {fecha}. Desde ese día ya no se cuentan comidas. Si es un error, habla con el admin.',
+      banner_plazo: 'Para no asistir la semana que viene, avisa como muy tarde el jueves de esta semana (hasta las 23:59).',
+      banner_bizum: 'Recuerda hacer el bizum al admin: debes pagarlo antes del día 3 del mes siguiente.',
+      comidas_total: '{n} comidas · {precio}/comida', estado_bizum: 'Estado del bizum de {mes}', pagado: '✅ Pagado', pendiente: '⏳ Pendiente',
+      leg_asiste: 'Asiste', leg_no: 'No asiste', leg_festivo: 'Festivo', leg_late: 'Aviso fuera de plazo', leg_baja: 'De baja', titulo_out: 'De baja en el comedor',
+      late_modal: 'Ya no puedes cambiar este día: el plazo para avisar terminó el jueves de la semana anterior.',
+      f_nombre: 'Nombre y apellidos del niño/a', f_tutor: 'Nombre y apellidos del aita, ama o tutor/a', f_tel: 'Teléfono de contacto', f_gela: 'Gela',
+      sin_elegir: 'Sin elegir', f_alerg: 'Alergias o intolerancias alimentarias',
+      alerg_ya: 'Ya indicado. Si necesitas corregirlo, contacta con el admin.', alerg_ph: 'Escribe «Sin alergias» si no tiene',
+      alerg_hint: 'Una vez guardado no podrás modificarlo tú mismo/a.', wa_btn: 'Escribir por WhatsApp',
+      f_menu: 'Tipo de menú', sin_asignar: 'Sin asignar', menu_hint: 'Para cambiar el tipo de menú, contacta con el admin.', guardar_perfil: 'Guardar perfil',
+      pin_cambiar_lbl: 'Cambiar mi PIN (5 dígitos)', pin_nuevo: 'Nuevo PIN', pin_repite: 'Repite el nuevo PIN', pin_btn: 'Cambiar PIN',
+      pin_5: 'El PIN debe tener exactamente 5 dígitos.', pin_nocoinc: 'Los dos PIN no coinciden.', pin_error: 'No se ha podido cambiar el PIN: ',
+      pin_ok: 'PIN cambiado. Úsalo la próxima vez que entres.', perfil_ok: 'Perfil guardado.', perfil_err: 'No se ha podido guardar el perfil: ',
+      cambio_err: 'No se ha podido guardar el cambio: ', instala: '📲 Instala la app en tu móvil', instalar: 'Instalar',
+      instala_ios: 'En iPhone: toca <b>Compartir</b> (cuadrado con flecha) y luego <b>Añadir a pantalla de inicio</b>.',
+      err_plazo: 'Plazo cerrado: los cambios de esa semana se avisan como muy tarde el jueves anterior.',
+      err_alerg: 'Las alergias solo las puede cambiar el admin.', entendido: 'Entendido',
+      wa_solicitud: 'Hola! Soy la familia de {nino}. Quiero hacer un cambio en: {campo}.', campo_alerg: 'alergias o intolerancias', campo_menu: 'tipo de menú',
+      idioma_otro: 'Euskaraz', idioma_corto: 'EU', idioma_title: 'Euskaraz'
+    },
+    eu: {
+      app_title: 'Jantokia – Basurtoko Haurreskola', app_sub: 'Gasca cateringaren asistentzia eta ordainketak',
+      quien: 'Nor zara?', soy_familia: 'Familia bat naiz', soy_admin: 'Administratzailea naiz',
+      login_fam_sub: 'Idatzi zure haurraren izena eta administratzaileak emandako PINa',
+      nombre_nino: 'Haurraren izena', ej_nombre: 'Adib.: Irati', pin: 'PINa', cancelar: 'Utzi', entrar: 'Sartu',
+      rellena: 'Bete haurraren izena eta PINa.', comprobando: 'Egiaztatzen…', pin_mal: 'Izena edo PINa ez da zuzena.',
+      demasiados: 'Saiakera gehiegi. Saiatu berriro minutu batzuk barru.', no_vincular: 'Ezin izan da zure familia lotu.',
+      no_entrar: 'Ezin izan da sartu.', sub_familia: 'Jantokia · Gasca cateringa', salir: 'Irten', perfil: 'Profila',
+      banner_baja: 'Jantokiko baja: {fecha}. Egun horretatik aurrera ez da bazkaririk kontatuko. Akatsa bada, jarri harremanetan administratzailearekin.',
+      banner_plazo: 'Hurrengo astean ez etortzeko, abisatu beranduenez aste honetako ostegunean (23:59ak arte).',
+      banner_bizum: 'Gogoratu administratzaileari bizuma egitea: hurrengo hilabeteko 3a baino lehen ordaindu behar da.',
+      comidas_total: '{n} bazkari · {precio}/bazkari', estado_bizum: 'Bizumaren egoera: {mes}', pagado: '✅ Ordainduta', pendiente: '⏳ Ordaintzeke',
+      leg_asiste: 'Dator', leg_no: 'Ez dator', leg_festivo: 'Jaieguna', leg_late: 'Epez kanpo', leg_baja: 'Baja', titulo_out: 'Jantokian baja',
+      late_modal: 'Ezin duzu egun hau aldatu: abisatzeko epea aurreko asteko ostegunean amaitu zen.',
+      f_nombre: 'Haurraren izen-abizenak', f_tutor: 'Aitaren, amaren edo tutorearen izen-abizenak', f_tel: 'Harremanetarako telefonoa', f_gela: 'Gela',
+      sin_elegir: 'Aukeratu gabe', f_alerg: 'Elikagai-alergiak edo -intolerantziak',
+      alerg_ya: 'Adierazita dago. Zuzendu behar baduzu, jarri harremanetan administratzailearekin.', alerg_ph: 'Idatzi «Alergiarik ez» ez badu',
+      alerg_hint: 'Behin gordeta, ezin izango duzu zuk aldatu.', wa_btn: 'Idatzi WhatsAppez',
+      f_menu: 'Menu mota', sin_asignar: 'Esleitu gabe', menu_hint: 'Menu mota aldatzeko, jarri harremanetan administratzailearekin.', guardar_perfil: 'Gorde profila',
+      pin_cambiar_lbl: 'Aldatu nire PINa (5 digitu)', pin_nuevo: 'PIN berria', pin_repite: 'Errepikatu PIN berria', pin_btn: 'Aldatu PINa',
+      pin_5: 'PINak 5 digitu izan behar ditu.', pin_nocoinc: 'Bi PINak ez datoz bat.', pin_error: 'Ezin izan da PINa aldatu: ',
+      pin_ok: 'PINa aldatu da. Erabili hurrengo aldian sartzeko.', perfil_ok: 'Profila gorde da.', perfil_err: 'Ezin izan da profila gorde: ',
+      cambio_err: 'Ezin izan da aldaketa gorde: ', instala: '📲 Instalatu aplikazioa mugikorrean', instalar: 'Instalatu',
+      instala_ios: 'iPhonean: sakatu <b>Partekatu</b> (gezidun karratua) eta gero <b>Gehitu hasierako pantailan</b>.',
+      err_plazo: 'Epea itxita dago: aste horretako aldaketak aurreko ostegunera arte abisatu behar dira.',
+      err_alerg: 'Alergiak administratzaileak bakarrik alda ditzake.', entendido: 'Ados',
+      wa_solicitud: 'Kaixo! {nino} haurraren familiakoa naiz. Aldaketa bat egin nahi dut: {campo}.', campo_alerg: 'alergiak edo intolerantziak', campo_menu: 'menu mota',
+      idioma_otro: 'En castellano', idioma_corto: 'ES', idioma_title: 'En castellano'
+    }
+  };
+  function t(k, v){
+    var s = (TXT[L()] && TXT[L()][k] != null) ? TXT[L()][k] : (TXT.es[k] != null ? TXT.es[k] : k);
+    if (v) Object.keys(v).forEach(function(n){ s = s.split('{' + n + '}').join(v[n]); });
+    return s;
+  }
+  function setLang(l){ LANG = l; try { localStorage.setItem(LANG_KEY, l); } catch(e){} render(); }
+  function langToggleHtml(corto){
+    return '<button class="btn ghost' + (corto ? '' : ' small') + '" id="lang-toggle" type="button" title="' + t('idioma_title') + '">' + (corto ? t('idioma_corto') : t('idioma_otro')) + '</button>';
+  }
+  function bindLangToggle(){
+    var b = document.getElementById('lang-toggle');
+    if (b) b.addEventListener('click', function(){ setLang(LANG === 'eu' ? 'es' : 'eu'); });
+  }
+  function mesNombre(m){ return L() === 'eu' ? MESES_EU[m] : MESES[m]; }
+  // Traduce los mensajes de error que vienen del servidor (en castellano)
+  function trErr(msg){
+    msg = String(msg || '');
+    if (/Plazo cerrado/i.test(msg)) return t('err_plazo');
+    if (/alergias solo/i.test(msg)) return t('err_alerg');
+    if (/Demasiados intentos/i.test(msg)) return t('demasiados');
+    if (/PIN debe tener/i.test(msg)) return t('pin_5');
+    return msg;
+  }
+
+  // ---- Acción pedida por la URL (p. ej. al tocar el aviso del viernes: ?accion=resumen) ----
+  var PENDING_ACCION = (function(){ try { return new URLSearchParams(location.search).get('accion'); } catch(e){ return null; } })();
+
   const SERVICE_START_FALLBACK = '2026-10-01'; // se usa solo si settings.service_start_date est\u00e1 vac\u00edo
 
   // ======================================================================
@@ -243,7 +342,8 @@
     childByFamily: {},        // family_id -> fila children (asume 1 ni\u00f1o por familia)
     menuByFamily: {},         // family_id -> menu_type
     absencesByFamily: {},     // family_id -> ['YYYY-MM-DD', ...]
-    paymentsByFamily: {}      // family_id -> { 'YYYY-MM': true/false }
+    paymentsByFamily: {},     // family_id -> { 'YYYY-MM': true/false }
+    membersByFamily: {}       // admin: family_id -> { n, last } (veces que ha entrado)
   };
   var view = { year: 2026, month: 9, adminFamilyId: null, loginMode: null, loginError: null };
 
@@ -314,6 +414,7 @@
       overlay.querySelector('#app-modal-close').addEventListener('click', function(){ overlay.classList.remove('open'); });
     }
     overlay.querySelector('#app-modal-msg').textContent = msg;
+    overlay.querySelector('#app-modal-close').textContent = t('entendido');
     overlay.classList.add('open');
   }
   function setNote(msg){
@@ -378,6 +479,7 @@
     var { data, error } = await supabase.from(S.families.table).select('*').order(S.families.code);
     if (error){ console.error('families', error); return; }
     var fams = data || [];
+    var memP = fetchAllRows(S.family_members.table, 'family_id,role,created_at', 'created_at');
     // Admin: 4 consultas para todas las familias (antes eran 4 por familia).
     var res = await Promise.all([
       fetchAllRows(S.children.table, '*', S.children.id),
@@ -386,6 +488,13 @@
       fetchAllRows(S.payments.table, '*', S.payments.id)
     ]);
     CACHE.families = fams;
+    var mem = await memP, porFam = {};
+    (mem || []).forEach(function(r){
+      if (r.role !== 'family' || !r.family_id) return;
+      var c = porFam[r.family_id] || (porFam[r.family_id] = { n: 0, last: '' });
+      c.n++; if (String(r.created_at) > c.last) c.last = String(r.created_at);
+    });
+    CACHE.membersByFamily = porFam;
     if (res.some(function(x){ return x === null; })){
       // Si algo falla, se vuelve al m\u00e9todo anterior, familia a familia.
       await Promise.all(fams.map(function(f){ return fetchFamilyBundle(f[S.families.id]); }));
@@ -439,6 +548,7 @@
         if (d.baja_desde) return quien + ': ' + fn + (d.active === false ? ' de baja desde el ' : ' con baja programada el ') + fmtDia(d.baja_desde);
         return quien + ': ' + fn + (d.active === false ? ' dada de baja' : ' dada de alta');
       case 'pin_codes': return quien + ': cambió su PIN';
+      case 'family_members': return quien + ': entró en la app';
       default: return quien + ': ' + a.table_name + ' ' + a.action;
     }
   }
@@ -530,6 +640,11 @@
   function legacyOut(f){ return f.active === false && !bajaOf(f); }
   function activeNow(f){ var b = bajaOf(f); return f.active !== false && !(b && b <= todayIso()); }
   function fmtFecha(d){ var p = String(d||'').split('-'); return p.length>=3 ? (parseInt(p[2],10)+' de '+MESES[parseInt(p[1],10)-1]+' de '+p[0]) : String(d||''); }
+  function fmtFechaL(d){
+    if (L() !== 'eu') return fmtFecha(d);
+    var p = String(d||'').split('-');
+    return p.length>=3 ? (p[0] + 'ko ' + MESES_EU_GEN[parseInt(p[1],10)-1] + ' ' + parseInt(p[2],10) + 'a') : String(d||'');
+  }
   function nextMondayIso(){ var t = new Date(); var m = mondayOf(iso(t.getFullYear(), t.getMonth(), t.getDate())); m.setDate(m.getDate()+7); return iso(m.getFullYear(), m.getMonth(), m.getDate()); }
   function bajaLabel(f){
     var b = bajaOf(f);
@@ -654,6 +769,91 @@
       '<button class="btn small" id="copy-gela">Copiar resumen</button></div>';
     return h;
   }
+  // ---- Acceso de las familias: PIN nuevo + mensaje de WhatsApp con enlace, nombre y PIN ----
+  const APP_URL = 'https://comedor-haurreskola-basurto.vercel.app';
+  var ACCESO = {};                                   // family_id -> PIN recién creado (solo en memoria)
+  var ACCESO_KEY = 'comedor_accesos_enviados', ACCESO_IDIOMA_KEY = 'comedor_accesos_idioma';
+  function accesosEnviados(){ try { return JSON.parse(localStorage.getItem(ACCESO_KEY) || '{}') || {}; } catch(e){ return {}; } }
+  function marcarAccesoEnviado(fid){ try { var m = accesosEnviados(); m[fid] = new Date().toISOString(); localStorage.setItem(ACCESO_KEY, JSON.stringify(m)); } catch(e){} }
+  function accesoIdioma(){ try { var v = localStorage.getItem(ACCESO_IDIOMA_KEY); return (v === 'es' || v === 'eu') ? v : 'ambos'; } catch(e){ return 'ambos'; } }
+  function nuevoPin(){
+    var a = new Uint32Array(1), p;
+    do { crypto.getRandomValues(a); p = String(a[0] % 100000).padStart(5, '0'); }
+    while (/^(\d)\1{4}$/.test(p) || '0123456789'.indexOf(p) !== -1 || '9876543210'.indexOf(p) !== -1);
+    return p;
+  }
+  function mensajeAcceso(fid, pin, idioma){
+    var f = famRow(fid) || {}, code = f[S.families.code] || familyLabel(fid);
+    var es = '¡Hola! 👋 Ya podéis usar la app del comedor de la Haurreskola Basurto para avisar de los días que ' + code + ' no se queda a comer y ver lo que hay que pagar cada mes.\n\n' +
+      '👉 ' + APP_URL + '\nNombre: ' + code + '\nPIN: ' + pin + '\n\n' +
+      'Para tenerla en el móvil: en Android, menú ⋮ → «Instalar aplicación» o «Añadir a pantalla de inicio»; en iPhone, desde Safari → Compartir → «Añadir a pantalla de inicio».\n' +
+      'Los cambios de una semana se avisan como muy tarde el jueves anterior. ¡Gracias!';
+    var eu = 'Kaixo! 👋 Basurtoko Haurreskolako jantokiaren aplikazioa erabil dezakezue orain, ' + code + ' bazkaltzera geratuko ez den egunak abisatzeko eta hilero ordaindu beharrekoa ikusteko.\n\n' +
+      '👉 ' + APP_URL + '\nIzena: ' + code + '\nPINa: ' + pin + '\n\n' +
+      'Mugikorrean izateko: Androiden, ⋮ menua → «Instalatu aplikazioa» edo «Gehitu hasierako pantailan»; iPhonean, Safaritik → Partekatu → «Gehitu hasierako pantailan».\n' +
+      'Aste bateko aldaketak aurreko ostegunera arte abisatu behar dira. Eskerrik asko!';
+    if (idioma === 'es') return es;
+    if (idioma === 'eu') return eu;
+    return es + '\n\n— — —\n\n' + eu;
+  }
+  function accesoCardHtml(){
+    var fams = CACHE.families.filter(activeNow);
+    var dentro = fams.filter(function(f){ return !!CACHE.membersByFamily[f[S.families.id]]; }).length;
+    var env = accesosEnviados(), idioma = accesoIdioma();
+    fams = fams.slice().sort(function(a, b){
+      var ea = CACHE.membersByFamily[a[S.families.id]] ? 1 : 0, eb = CACHE.membersByFamily[b[S.families.id]] ? 1 : 0;
+      if (ea !== eb) return ea - eb;
+      return familyLabel(a[S.families.id]).localeCompare(familyLabel(b[S.families.id]), 'es');
+    });
+    var h = '<div class="card" id="card-acceso"><details' + (dentro < fams.length ? ' open' : '') + '><summary style="font-weight:700;color:var(--ink);font-size:1rem;">Acceso de las familias · ' + dentro + ' de ' + fams.length + ' han entrado</summary>' +
+      '<p class="hint" style="margin:6px 0 8px;">«Crear PIN» pone un PIN nuevo a esa familia (el anterior deja de valer) y prepara el mensaje de WhatsApp con el enlace de la app, el nombre y el PIN.</p>' +
+      '<div class="field"><label>Idioma del mensaje</label><select id="acceso-idioma">' +
+      [['ambos','Castellano y euskera'],['es','Castellano'],['eu','Euskera']].map(function(o){ return '<option value="' + o[0] + '"' + (o[0] === idioma ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
+      '</select></div><table class="mini">';
+    fams.forEach(function(f){
+      var fid = f[S.families.id], mem = CACHE.membersByFamily[fid], pin = ACCESO[fid];
+      var estado = mem ? 'Entró el ' + fmtDia(String(mem.last).slice(0,10)) : '<b>Nunca ha entrado</b>';
+      if (env[fid]) estado += '<br><span class="hint">Acceso enviado el ' + fmtDia(String(env[fid]).slice(0,10)) + '</span>';
+      var acc;
+      if (pin){
+        var ch = CACHE.childByFamily[fid] || {}, tel = waPhone(ch[S.children.telefono]);
+        acc = '<span class="pin-chip">PIN ' + pin + '</span><br>' +
+          (tel ? '<a class="btn small primary" data-acceso-wa="' + esc(fid) + '" href="https://wa.me/' + tel + '?text=' + encodeURIComponent(mensajeAcceso(fid, pin, idioma)) + '" target="_blank" rel="noopener">Abrir WhatsApp</a> ' : '') +
+          '<button class="btn small" data-acceso-copiar="' + esc(fid) + '">Copiar</button>';
+      } else {
+        acc = '<button class="btn small' + (mem ? '' : ' primary') + '" data-acceso-pin="' + esc(fid) + '">' + (mem ? 'Nuevo PIN' : 'Crear PIN') + '</button>';
+      }
+      h += '<tr><td>' + esc(familyLabel(fid)) + '</td><td>' + estado + '</td><td style="text-align:right;">' + acc + '</td></tr>';
+    });
+    return h + '</table></details></div>';
+  }
+  function bindAcceso(){
+    var sel = document.getElementById('acceso-idioma');
+    if (sel) sel.addEventListener('change', function(){ try { localStorage.setItem(ACCESO_IDIOMA_KEY, sel.value); } catch(e){} renderAdmin(root()); });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-acceso-pin]'), function(b){
+      b.addEventListener('click', async function(){
+        var fid = b.getAttribute('data-acceso-pin'), f = famRow(fid);
+        if (!f) return;
+        if (!window.confirm('¿Crear un PIN nuevo para ' + familyLabel(fid) + '?\n\nEl PIN anterior dejará de funcionar. Después podrás abrir WhatsApp con el mensaje ya escrito.')) return;
+        b.disabled = true;
+        var pin = nuevoPin();
+        if (await adminSetPin(f[S.families.code], pin)){ ACCESO[fid] = pin; renderAdmin(root()); }
+        else b.disabled = false;
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-acceso-wa]'), function(a){
+      a.addEventListener('click', function(){ marcarAccesoEnviado(a.getAttribute('data-acceso-wa')); setTimeout(function(){ renderAdmin(root()); }, 400); });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-acceso-copiar]'), function(b){
+      b.addEventListener('click', function(){
+        var fid = b.getAttribute('data-acceso-copiar'), msg = mensajeAcceso(fid, ACCESO[fid], accesoIdioma());
+        function ok(){ marcarAccesoEnviado(fid); toast('Mensaje copiado: pégalo en WhatsApp o donde quieras.'); renderAdmin(root()); }
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(msg).then(ok, function(){ showModal(msg); });
+        else showModal(msg);
+      });
+    });
+  }
+
   function backupCardHtml(){
     return '<div class="card"><p style="margin:0 0 4px;font-weight:700;">Copia de seguridad</p>' +
       '<p class="hint" style="margin:0 0 8px;">Descarga todos los datos (familias, perfiles, menús, días, pagos y ajustes) en un archivo. Los PIN no se incluyen. Supabase guarda además una copia interna cada domingo.</p>' +
@@ -707,11 +907,11 @@
     if (current.indexOf(dateStr) !== -1){
       var delQ = supabase.from(S.absences.table).delete().eq(S.absences.familyId, familyId).eq(S.absences.date, dateStr);
       var { error } = await delQ;
-      if (error){ showModal('No se ha podido guardar el cambio: ' + error.message); return; }
+      if (error){ showModal(t('cambio_err') + trErr(error.message)); return; }
     } else {
       var row = {}; row[S.absences.familyId] = familyId; row[S.absences.date] = dateStr;
       var { error: insErr } = await supabase.from(S.absences.table).insert(row);
-      if (insErr){ showModal('No se ha podido guardar el cambio: ' + insErr.message); return; }
+      if (insErr){ showModal(t('cambio_err') + trErr(insErr.message)); return; }
     }
     await fetchFamilyBundle(familyId);
   }
@@ -724,9 +924,9 @@
     if (fields.alergias !== undefined) row[S.children.alergias] = fields.alergias;
     row[S.children.familyId] = familyId;
     var { error } = await supabase.from(S.children.table).upsert(row, { onConflict: S.children.familyId });
-    if (error){ showModal('No se ha podido guardar el perfil: ' + error.message); return; }
+    if (error){ showModal(t('perfil_err') + trErr(error.message)); return; }
     await fetchFamilyBundle(familyId);
-    setNote('Perfil guardado.');
+    setNote(t('perfil_ok'));
   }
   async function togglePayment(familyId, mKey){
     var current = !!(CACHE.paymentsByFamily[familyId] && CACHE.paymentsByFamily[familyId][mKey]);
@@ -1066,7 +1266,7 @@
   }
   function pdfAlergia(a){
     a = String(a || '').trim();
-    if (!a || /^(sin alergias?|ninguna|no|n\/a|-+|\u2014)$/i.test(a)) return '';
+    if (!a || /^(sin alergias?|ninguna|no|n\/a|-+|—|alergiarik (ez|gabe)|ez|ezer ez|bat ere ez)$/i.test(a)) return '';
     return a.toUpperCase();
   }
   function listadoRows(){
@@ -1139,7 +1339,7 @@
   function waLinkSolicitudCambio(childName, campo){
     var phone = waPhone(CACHE.settings.admin_phone);
     if (!phone) return null;
-    var msg = 'Hola! Soy la familia de ' + (childName||'') + '. Quiero hacer un cambio en: ' + campo + '.';
+    var msg = t('wa_solicitud', { nino: childName || '', campo: campo });
     return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
   }
 
@@ -1150,7 +1350,7 @@
     var days = weekdaysOfMonth(y,m);
     var first = days[0];
     var startCol = first.getDay(); // 1..5
-    var html = '<div class="cal-head">' + DIAS_C.map(function(d){ return '<span>'+d+'</span>'; }).join('') + '</div><div class="cal-grid">';
+    var html = '<div class="cal-head">' + (L() === 'eu' ? DIAS_C_EU : DIAS_C).map(function(d){ return '<span>'+d+'</span>'; }).join('') + '</div><div class="cal-grid">';
     for (var i=1;i<startCol;i++) html += '<div class="cal-cell empty"></div>';
     var bajas = CACHE.absencesByFamily[familyId] || [];
     days.forEach(function(d){
@@ -1162,20 +1362,20 @@
       var tocable = editable && !festivo && !out;
       var cls = 'cal-cell ' + (festivo ? 'festivo' : (out ? 'out' : (baja ? 'baja' : 'asiste'))) + (late ? ' late' : '') + (tocable ? '' : ' readonly');
       var ico = (festivo || out) ? '' : (baja ? '<span class="ico">\ud83c\udfe0</span>' : '<span class="ico">\ud83c\udf7d\ufe0f</span>');
-      html += '<div class="'+cls+'"' + (tocable ? ' data-date="'+date+'"' : '') + (out ? ' title="De baja en el comedor"' : '') + '>' + ico + d.getDate() + '</div>';
+      html += '<div class="'+cls+'"' + (tocable ? ' data-date="'+date+'"' : '') + (out ? ' title="' + t('titulo_out') + '"' : '') + '>' + ico + d.getDate() + '</div>';
     });
     html += '</div><div class="legend">' +
-      '<span><span class="dot" style="background:var(--verde)"></span>Asiste</span>' +
-      '<span><span class="dot" style="background:var(--naranja)"></span>No asiste</span>' +
-      '<span><span class="dot" style="background:var(--gris-fest)"></span>Festivo</span>' +
-      '<span><span class="dot" style="background:var(--rojo)"></span>Aviso fuera de plazo</span>' +
-      (bajaDesde(familyId) ? '<span><span class="dot" style="background:repeating-linear-gradient(135deg,var(--gris-fest) 0 3px,transparent 3px 6px);border:1px solid var(--gris-fest);"></span>De baja</span>' : '') +
+      '<span><span class="dot" style="background:var(--verde)"></span>' + t('leg_asiste') + '</span>' +
+      '<span><span class="dot" style="background:var(--naranja)"></span>' + t('leg_no') + '</span>' +
+      '<span><span class="dot" style="background:var(--gris-fest)"></span>' + t('leg_festivo') + '</span>' +
+      '<span><span class="dot" style="background:var(--rojo)"></span>' + t('leg_late') + '</span>' +
+      (bajaDesde(familyId) ? '<span><span class="dot" style="background:repeating-linear-gradient(135deg,var(--gris-fest) 0 3px,transparent 3px 6px);border:1px solid var(--gris-fest);"></span>' + t('leg_baja') + '</span>' : '') +
       '</div>';
     return html;
   }
   function monthNav(y,m){
     return '<div class="month-nav"><button class="btn ghost" id="mnav-prev">\u2190</button>' +
-      '<span class="label">' + MESES[m] + ' ' + y + '</span>' +
+      '<span class="label">' + (L() === 'eu' ? (y + 'ko ' + MESES_EU[m]) : (MESES[m] + ' ' + y)) + '</span>' +
       '<button class="btn ghost" id="mnav-next">\u2192</button></div>';
   }
   function bindMonthNav(minY, minM, maxY, maxM, afterRender){
@@ -1199,7 +1399,7 @@
       cell.addEventListener('click', async function(){
         var date = cell.getAttribute('data-date');
         if (!allowLate && deadlineInfo(date).late){
-          showModal('Ya no puedes cambiar este d\u00eda: el plazo para avisar termin\u00f3 el jueves de la semana anterior.');
+          showModal(t('late_modal'));
           return;
         }
         cell.classList.add('disabled');
@@ -1209,12 +1409,12 @@
     });
   }
   function menuSelectHtml(id, current, editable){
-    var html = '<select id="'+id+'" ' + (editable?'':'disabled') + '><option value="">Sin elegir</option>';
+    var html = '<select id="'+id+'" ' + (editable?'':'disabled') + '><option value="">' + t('sin_elegir') + '</option>';
     MENUS.forEach(function(opt){ html += '<option value="'+esc(opt)+'"'+(opt===current?' selected':'')+'>'+esc(opt)+'</option>'; });
     return html + '</select>';
   }
   function gelaSelectHtml(id, current){
-    var html = '<select id="'+id+'"><option value="">Sin elegir</option>';
+    var html = '<select id="'+id+'"><option value="">' + t('sin_elegir') + '</option>';
     ['1','2','3','4'].forEach(function(g){ html += '<option value="'+g+'"'+(current===g?' selected':'')+'>'+g+'</option>'; });
     return html + '</select>';
   }
@@ -1230,19 +1430,19 @@
     if (forceEditableAlergias){
       alergiasHtml = '<input type="text" id="perfil-alergias'+suffix+'" value="'+esc(alergias)+'"><p class="hint">Como admin puedes corregir este campo.</p>';
     } else if (alergiasSet){
-      var waAlerg = waLinkSolicitudCambio(child[S.children.nino], 'alergias o intolerancias');
-      alergiasHtml = '<p class="pin-chip" style="font-size:1rem;">'+esc(alergias)+'</p><p class="hint">Ya indicado. Si necesitas corregirlo, contacta con el admin.</p>' +
-        (waAlerg ? '<p style="margin-top:6px;"><a class="btn small primary" href="'+waAlerg+'" target="_blank" rel="noopener">Escribir por WhatsApp</a></p>' : '');
+      var waAlerg = waLinkSolicitudCambio(child[S.children.nino], t('campo_alerg'));
+      alergiasHtml = '<p class="pin-chip" style="font-size:1rem;">'+esc(alergias)+'</p><p class="hint">' + t('alerg_ya') + '</p>' +
+        (waAlerg ? '<p style="margin-top:6px;"><a class="btn small primary" href="'+waAlerg+'" target="_blank" rel="noopener">' + t('wa_btn') + '</a></p>' : '');
     } else {
-      alergiasHtml = '<input type="text" id="perfil-alergias'+suffix+'" placeholder="Escribe \u00abSin alergias\u00bb si no tiene"><p class="hint">Una vez guardado no podr\u00e1s modificarlo t\u00fa mismo/a.</p>';
+      alergiasHtml = '<input type="text" id="perfil-alergias'+suffix+'" placeholder="' + esc(t('alerg_ph')) + '"><p class="hint">' + t('alerg_hint') + '</p>';
     }
     var menuHtml = forceEditableAlergias ?
       '<div class="field"><label>Tipo de men\u00fa</label>' + menuSelectHtml('perfil-menu'+suffix, menuType||'', true) + '<p class="hint">Como admin puedes cambiarlo aqu\u00ed.</p></div>' : '';
-    return '<div class="field"><label>Nombre y apellidos del ni\u00f1o/a</label><input type="text" id="perfil-nino'+suffix+'" value="'+esc(child[S.children.nino]||'')+'"></div>' +
-      '<div class="field"><label>Nombre y apellidos del aita, ama o tutor/a</label><input type="text" id="perfil-tutor'+suffix+'" value="'+esc(child[S.children.tutor]||'')+'"></div>' +
-      '<div class="field"><label>Tel\u00e9fono de contacto</label><input type="tel" id="perfil-telefono'+suffix+'" value="'+esc(child[S.children.telefono]||'')+'"></div>' +
-      '<div class="field"><label>Gela</label>' + gelaSelectHtml('perfil-gela'+suffix, child[S.children.gela]||'') + '</div>' +
-      '<div class="field"><label>Alergias o intolerancias alimentarias</label>' + alergiasHtml + '</div>' +
+    return '<div class="field"><label>' + t('f_nombre') + '</label><input type="text" id="perfil-nino'+suffix+'" value="'+esc(child[S.children.nino]||'')+'"></div>' +
+      '<div class="field"><label>' + t('f_tutor') + '</label><input type="text" id="perfil-tutor'+suffix+'" value="'+esc(child[S.children.tutor]||'')+'"></div>' +
+      '<div class="field"><label>' + t('f_tel') + '</label><input type="tel" id="perfil-telefono'+suffix+'" value="'+esc(child[S.children.telefono]||'')+'"></div>' +
+      '<div class="field"><label>' + t('f_gela') + '</label>' + gelaSelectHtml('perfil-gela'+suffix, child[S.children.gela]||'') + '</div>' +
+      '<div class="field"><label>' + t('f_alerg') + '</label>' + alergiasHtml + '</div>' +
       menuHtml;
   }
   function bindDropdown(btnId, panelId){
@@ -1261,28 +1461,32 @@
   // LOGIN
   // ---------------------------------------------------------------------
   function renderLoginChoice(r){
-    var html = '<h1>Comedor \u2013 Haurreskola Basurto</h1>' +
-      '<p class="sub">Control de asistencia y pagos del catering Gasca</p>' +
-      '<div class="card"><p style="margin:0 0 12px;font-weight:700;">\u00bfQui\u00e9n eres?</p>' +
+    var html = '<div class="row" style="justify-content:flex-end;margin:-10px 0 2px;">' + langToggleHtml(false) + '</div>' +
+      '<h1>' + t('app_title') + '</h1>' +
+      '<p class="sub">' + t('app_sub') + '</p>' +
+      '<div class="card"><p style="margin:0 0 12px;font-weight:700;">' + t('quien') + '</p>' +
       '<div class="grid-roles">' +
-      '<button class="btn primary" id="choose-family">Soy una familia</button>' +
-      '<button class="btn" id="choose-admin">Soy el admin</button>' +
+      '<button class="btn primary" id="choose-family">' + t('soy_familia') + '</button>' +
+      '<button class="btn" id="choose-admin">' + t('soy_admin') + '</button>' +
       '</div></div>' + installHtml();
     r.innerHTML = html;
     bindInstall();
+    bindLangToggle();
     document.getElementById('choose-family').addEventListener('click', function(){ view.loginMode='family'; view.loginError=null; render(); });
     document.getElementById('choose-admin').addEventListener('click', function(){ view.loginMode='admin'; view.loginError=null; render(); });
   }
   function renderFamilyLogin(r){
-    var html = '<h1>Soy una familia</h1>' +
-      '<p class="sub">Introduce el nombre de tu hijo/a y el PIN que te dio el admin</p>' +
+    var html = '<div class="row" style="justify-content:flex-end;margin:-10px 0 2px;">' + langToggleHtml(false) + '</div>' +
+      '<h1>' + t('soy_familia') + '</h1>' +
+      '<p class="sub">' + t('login_fam_sub') + '</p>' +
       '<div class="card">' +
-      '<div class="field"><label>Nombre del ni\u00f1o/a</label><input type="text" id="fam-code" placeholder="Ej: Irati"></div>' +
-      '<div class="field"><label>PIN</label><input type="password" inputmode="numeric" id="fam-pin" placeholder="\u2022\u2022\u2022\u2022\u2022"></div>' +
+      '<div class="field"><label>' + t('nombre_nino') + '</label><input type="text" id="fam-code" placeholder="' + esc(t('ej_nombre')) + '" autocomplete="username"></div>' +
+      '<div class="field"><label>' + t('pin') + '</label><input type="password" inputmode="numeric" id="fam-pin" placeholder="•••••" autocomplete="current-password"></div>' +
       (view.loginError ? '<p class="err">'+esc(view.loginError)+'</p>' : '') +
-      '<div class="row"><button class="btn ghost" id="login-cancel">Cancelar</button><button class="btn primary" id="login-ok">Entrar</button></div>' +
+      '<div class="row"><button class="btn ghost" id="login-cancel">' + t('cancelar') + '</button><button class="btn primary" id="login-ok">' + t('entrar') + '</button></div>' +
       '</div>';
     r.innerHTML = html;
+    bindLangToggle();
     document.getElementById('login-cancel').addEventListener('click', function(){ view.loginMode=null; render(); });
     document.getElementById('login-ok').addEventListener('click', doFamilyLogin);
     document.getElementById('fam-pin').addEventListener('keydown', function(e){ if(e.key==='Enter') doFamilyLogin(); });
@@ -1304,9 +1508,9 @@
   async function doFamilyLogin(){
     var code = document.getElementById('fam-code').value.trim();
     var pin = document.getElementById('fam-pin').value.trim();
-    if (!code || !pin){ view.loginError = 'Rellena el nombre del ni\u00f1o/a y el PIN.'; render(); return; }
+    if (!code || !pin){ view.loginError = t('rellena'); render(); return; }
     view.loginError = null;
-    root().innerHTML = '<p class="empty-msg">Comprobando\u2026</p>';
+    root().innerHTML = '<p class="empty-msg">' + t('comprobando') + '</p>';
     try {
       // 1) Sesi\u00f3n an\u00f3nima (si no hay ya una)
       var { data: sessData } = await supabase.auth.getSession();
@@ -1317,10 +1521,10 @@
       // 2) Reclamar la familia (comprueba el PIN en el servidor)
       var { data: claimData, error: claimErr } = await supabase.rpc(RPC_CLAIM_FAMILY, { p_family_code: code, p_pin: pin });
       if (claimErr) throw claimErr;
-      if (claimData === false || (claimData && claimData.success === false)){ throw new Error('Nombre o PIN incorrectos.'); }
+      if (claimData === false || (claimData && claimData.success === false)){ throw new Error(t('pin_mal')); }
       await afterLoginResolveFamily();
     } catch (e){
-      view.loginError = e.message || 'No se ha podido entrar.';
+      view.loginError = trErr(e && e.message) || t('no_entrar');
       render();
     }
   }
@@ -1328,7 +1532,7 @@
     var { data: sessData } = await supabase.auth.getSession();
     var uid = sessData && sessData.session && sessData.session.user && sessData.session.user.id;
     var { data: memberRow, error } = await supabase.from(S.family_members.table).select('*').eq(S.family_members.userId, uid).maybeSingle();
-    if (error || !memberRow){ view.loginError = 'No se ha podido vincular tu familia.'; render(); return; }
+    if (error || !memberRow){ view.loginError = t('no_vincular'); render(); return; }
     MY_FAMILY_ID = memberRow[S.family_members.familyId];
     ROLE = 'family';
     view.loginMode = null; view.loginError = null;
@@ -1365,34 +1569,36 @@
     var due = familyDue(familyId, y, m);
     var child = CACHE.childByFamily[familyId] || {};
     var menuInfo = CACHE.menuByFamily[familyId] || '';
-    var waMenu = waLinkSolicitudCambio(child[S.children.nino], 'tipo de men\u00fa');
+    var waMenu = waLinkSolicitudCambio(child[S.children.nino], t('campo_menu'));
     var panelHtml = perfilFieldsHtml('', child, false) +
-      '<div class="field"><label>Tipo de men\u00fa</label><p class="pin-chip" style="font-size:1rem;">'+esc(menuInfo||'Sin asignar')+'</p><p class="hint">Para cambiar el tipo de men\u00fa, contacta con el admin.</p>' +
-      (waMenu ? '<p style="margin-top:6px;"><a class="btn small primary" href="'+waMenu+'" target="_blank" rel="noopener">Escribir por WhatsApp</a></p>' : '') + '</div>' +
-      '<button class="btn primary" id="save-perfil">Guardar perfil</button>' +
+      '<div class="field"><label>' + t('f_menu') + '</label><p class="pin-chip" style="font-size:1rem;">'+esc(menuInfo||t('sin_asignar'))+'</p><p class="hint">' + t('menu_hint') + '</p>' +
+      (waMenu ? '<p style="margin-top:6px;"><a class="btn small primary" href="'+waMenu+'" target="_blank" rel="noopener">' + t('wa_btn') + '</a></p>' : '') + '</div>' +
+      '<button class="btn primary" id="save-perfil">' + t('guardar_perfil') + '</button>' +
       '<hr style="border:0;border-top:1px solid var(--line);margin:14px 0;">' +
-      '<div class="field"><label>Cambiar mi PIN (5 d\u00edgitos)</label>' +
-      '<input type="password" inputmode="numeric" maxlength="5" id="pin-new" placeholder="Nuevo PIN" style="margin-bottom:6px;">' +
-      '<input type="password" inputmode="numeric" maxlength="5" id="pin-new2" placeholder="Repite el nuevo PIN"></div>' +
-      '<button class="btn" id="save-pin">Cambiar PIN</button>' +
+      '<div class="field"><label>' + t('pin_cambiar_lbl') + '</label>' +
+      '<input type="password" inputmode="numeric" maxlength="5" id="pin-new" placeholder="' + esc(t('pin_nuevo')) + '" style="margin-bottom:6px;" autocomplete="new-password">' +
+      '<input type="password" inputmode="numeric" maxlength="5" id="pin-new2" placeholder="' + esc(t('pin_repite')) + '" autocomplete="new-password"></div>' +
+      '<button class="btn" id="save-pin">' + t('pin_btn') + '</button>' +
       (installHtml() ? '<hr style="border:0;border-top:1px solid var(--line);margin:14px 0;">' + installHtml() : '');
     var html = '<div class="row"><h1>'+esc(familyLabel(familyId))+'</h1>' +
       '<div class="header-actions">' +
-      '<button class="icon-btn" id="perfil-toggle" title="Perfil">\ud83d\udc64</button>' +
-      '<button class="btn ghost" id="chrole">Salir</button>' +
+      '<button class="icon-btn" id="perfil-toggle" title="' + t('perfil') + '">👤</button>' +
+      langToggleHtml(true) +
+      '<button class="btn ghost" id="chrole">' + t('salir') + '</button>' +
       '<div class="dropdown-panel" id="perfil-panel">'+panelHtml+'</div>' +
       '</div></div>' +
-      '<p class="sub">Comedor \u00b7 catering Gasca</p>';
+      '<p class="sub">' + t('sub_familia') + '</p>';
     var miBaja = bajaDesde(familyId);
-    if (miBaja) html += '<div class="banner rojo">Baja en el comedor desde el ' + esc(fmtFecha(miBaja)) + '. Desde ese d\u00eda ya no se cuentan comidas. Si es un error, habla con el admin.</div>';
-    html += '<div class="banner mostaza">Para no asistir la semana que viene, avisa como muy tarde el jueves de esta semana (hasta las 23:59).</div>';
-    if (nearPaymentWindow()) html += '<div class="banner verde">Recuerda hacer el bizum al admin: debes pagarlo antes del d\u00eda 3 del mes siguiente.</div>';
+    if (miBaja) html += '<div class="banner rojo">' + esc(t('banner_baja', { fecha: fmtFechaL(miBaja) })) + '</div>';
+    html += '<div class="banner mostaza">' + t('banner_plazo') + '</div>';
+    if (nearPaymentWindow()) html += '<div class="banner verde">' + t('banner_bizum') + '</div>';
     html += '<div class="card">' + monthNav(y,m) + calendarHtml(familyId,y,m,true) +
-      '<div class="totals"><span>'+due.count+' comidas \u00b7 '+money(CACHE.settings.price_base*(1+CACHE.settings.iva_pct/100))+'/comida</span><span>'+money(due.total)+'</span></div></div>';
+      '<div class="totals"><span>' + t('comidas_total', { n: due.count, precio: money(CACHE.settings.price_base*(1+CACHE.settings.iva_pct/100)) }) + '</span><span>'+money(due.total)+'</span></div></div>';
     var pagado = !!(CACHE.paymentsByFamily[familyId] && CACHE.paymentsByFamily[familyId][monthKey(y,m)]);
-    html += '<div class="card row"><span>Estado del bizum de '+MESES[m]+'</span><span class="pay-chip '+(pagado?'si':'no')+' readonly">'+(pagado?'\u2705 Pagado':'\u23f3 Pendiente')+'</span></div>';
+    html += '<div class="card row"><span>' + t('estado_bizum', { mes: mesNombre(m) }) + '</span><span class="pay-chip '+(pagado?'si':'no')+' readonly">'+(pagado ? t('pagado') : t('pendiente'))+'</span></div>';
     html += saveNoteHtml();
     r.innerHTML = html;
+    bindLangToggle();
 
     document.getElementById('chrole').addEventListener('click', doLogout);
     bindDropdown('perfil-toggle', 'perfil-panel');
@@ -1400,11 +1606,11 @@
     document.getElementById('save-pin').addEventListener('click', async function(){
       var a = document.getElementById('pin-new').value.trim();
       var b = document.getElementById('pin-new2').value.trim();
-      if (!/^[0-9]{5}$/.test(a)){ showModal('El PIN debe tener exactamente 5 d\u00edgitos.'); return; }
-      if (a !== b){ showModal('Los dos PIN no coinciden.'); return; }
+      if (!/^[0-9]{5}$/.test(a)){ showModal(t('pin_5')); return; }
+      if (a !== b){ showModal(t('pin_nocoinc')); return; }
       var { error } = await supabase.rpc(RPC_FAMILY_SET_PIN, { p_pin: a });
-      if (error){ showModal('No se ha podido cambiar el PIN: ' + error.message); return; }
-      showModal('PIN cambiado. \u00dasalo la pr\u00f3xima vez que entres.');
+      if (error){ showModal(t('pin_error') + trErr(error.message)); return; }
+      showModal(t('pin_ok'));
       document.getElementById('pin-new').value=''; document.getElementById('pin-new2').value='';
     });
     bindMonthNav(2026,9, 2027,6, function(){ renderFamilia(root()); });
@@ -1492,7 +1698,9 @@
     html += '</select></div>' +
       monthNav(y,m) + calendarHtml(famId,y,m,true) + '</div>';
 
-    html += '<div class="card"><p style="margin:0 0 8px;font-weight:700;">Pagos de '+MESES[m]+'</p><table class="pay"><tr><th>Familia</th><th>Men\u00fa</th><th>Comidas</th><th>Total</th><th>Bizum</th><th>WhatsApp</th></tr>';
+    html += accesoCardHtml();
+
+    html += '<div class="card"><p style="margin:0 0 8px;font-weight:700;">Pagos de '+MESES[m]+'</p><div style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table class="pay"><tr><th>Familia</th><th>Men\u00fa</th><th>Comidas</th><th>Total</th><th>Bizum</th><th>WhatsApp</th></tr>';
     var famsPago = CACHE.families.filter(activeNow).concat(CACHE.families.filter(function(f){ return !activeNow(f); }));
     famsPago.forEach(function(f){
       var fid = f[S.families.id];
@@ -1504,7 +1712,7 @@
         '<td><span class="pay-chip '+(pagado?'si':'no')+'" data-pay="'+esc(fid)+'">'+(pagado?'\u2705 S\u00ed':'\u23f3 No')+'</span></td>' +
         '<td>'+(wa?'<a class="btn small primary" href="'+wa+'" target="_blank" rel="noopener">Enviar</a>':'<span class="hint">Sin tel\u00e9fono</span>')+'</td></tr>';
     });
-    html += '</table></div>';
+    html += '</table></div></div>';
     html += cierreCardHtml(y,m) + previsionCardHtml(y,m) + gelaCardHtml();
 
     html += '<div class="card"><p style="margin:0 0 8px;font-weight:700;">Resumen semanal para Gasca</p>' +
@@ -1537,6 +1745,7 @@
     var pon = document.getElementById('push-on'); if (pon) pon.addEventListener('click', enablePush);
     var poff = document.getElementById('push-off'); if (poff) poff.addEventListener('click', disablePush);
     bindCierre(y,m);
+    bindAcceso();
     var cg = document.getElementById('copy-gela');
     if (cg) cg.addEventListener('click', function(){
       var t = gelaText();
@@ -1622,6 +1831,16 @@
       mail.href = 'mailto:' + (CACHE.settings.gasca_email||'') + '?subject=' + encodeURIComponent(res.subject) + '&body=' + encodeURIComponent(res.body);
     }
     document.getElementById('gen-resumen').addEventListener('click', generarResumen);
+    if (PENDING_ACCION === 'resumen'){
+      // Viene del aviso del viernes: se abre directamente el resumen para Gasca
+      PENDING_ACCION = null;
+      try { history.replaceState(null, '', location.pathname); } catch(e){}
+      setTimeout(function(){
+        generarResumen();
+        var w = document.getElementById('resumen-wrap');
+        if (w) w.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 60);
+    }
     document.getElementById('pdf-listado').addEventListener('click', function(){
       try {
         var f = listadoPdfFile();
@@ -1711,6 +1930,7 @@
   // ---------------------------------------------------------------------
   function render(){
     var r = root();
+    try { document.documentElement.lang = L(); } catch(e){}
     if (!ROLE){
       if (view.loginMode === 'family') renderFamilyLogin(r);
       else if (view.loginMode === 'admin') renderAdminLogin(r);
